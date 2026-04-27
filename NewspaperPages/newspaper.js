@@ -31,4 +31,4 @@ async function refreshNewspaper() {
 
 // 首次加载 + 每10秒同步一次
 refreshNewspaper();
-setInterval(refreshNewspaper, 10000);
+setInterval(refreshNewspaper, 1000);
