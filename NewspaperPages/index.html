@@ -2,69 +2,33 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>虚拟拍立得墙</title>
+    <title>虚拟拍立得 - 取景器</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<script type="module">
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDG6fta4tB3NMtzRIZS7SKaWpMy1pkw5Qs",
-  authDomain: "ciu265.firebaseapp.com",
-  projectId: "ciu265",
-  storageBucket: "ciu265.firebasestorage.app",
-  messagingSenderId: "60902672169",
-  appId: "1:60902672169:web:b10d5c2b121e0bcc42d938",
-  measurementId: "G-FKM9XP1XJH"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-
-  // 将上传功能挂载到全局，方便之前的按钮调用，test
-  window.uploadToCloud = async (imageData) => {
-    const fileName = `photos/${Date.now()}.png`; // 使用时间戳作为唯一文件名
-    const storageRef = ref(storage, fileName);
-    
-    try {
-      // 上传 Base64 字符串
-      await uploadString(storageRef, imageData, 'data_url');
-      console.log("上传云端成功！");
-    } catch (e) {
-      console.error("上传失败", e);
-    }
-  };
-</script>
 <body>
     <div class="container">
         <section class="camera-section">
-            <div class="viewfinder-container" id="viewfinder-container">
+            <div class="viewfinder-container">
                 <video id="video" autoplay playsinline></video>
                 <div class="shutter-overlay" id="shutter-overlay"></div>
             </div>
             <button id="snap-btn">CAPTURE</button>
+            <p style="margin-top:10px;"><a href="newspaper.html" target="_blank">打开报纸查看同步效果 →</a></p>
         </section>
 
         <section class="wall-section">
-            <div class="photo-wall" id="photo-wall">
-                <div class="photo-slot" data-index="0"></div>
-                <div class="photo-slot" data-index="1"></div>
-                <div class="photo-slot" data-index="2"></div>
-                <div class="photo-slot" data-index="3"></div>
-                <div class="photo-slot" data-index="4"></div>
-                <div class="photo-slot" data-index="5"></div>
+            <div class="photo-wall">
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
             </div>
         </section>
     </div>
     <canvas id="canvas" style="display:none;"></canvas>
-    <script src="script.js"></script>
+    
+    <script type="module" src="script.js"></script>
 </body>
 </html>
