@@ -5,6 +5,44 @@
     <title>虚拟拍立得墙</title>
     <link rel="stylesheet" href="style.css">
 </head>
+<script type="module">
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDG6fta4tB3NMtzRIZS7SKaWpMy1pkw5Qs",
+  authDomain: "ciu265.firebaseapp.com",
+  projectId: "ciu265",
+  storageBucket: "ciu265.firebasestorage.app",
+  messagingSenderId: "60902672169",
+  appId: "1:60902672169:web:b10d5c2b121e0bcc42d938",
+  measurementId: "G-FKM9XP1XJH"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+
+  // 将上传功能挂载到全局，方便之前的按钮调用，test
+  window.uploadToCloud = async (imageData) => {
+    const fileName = `photos/${Date.now()}.png`; // 使用时间戳作为唯一文件名
+    const storageRef = ref(storage, fileName);
+    
+    try {
+      // 上传 Base64 字符串
+      await uploadString(storageRef, imageData, 'data_url');
+      console.log("上传云端成功！");
+    } catch (e) {
+      console.error("上传失败", e);
+    }
+  };
+</script>
 <body>
     <div class="container">
         <section class="camera-section">
