@@ -17,44 +17,41 @@ async function setupCamera() {
     }
 }
 
-// 2. 拍照逻辑
-function takePhoto() {
-    // 快门动画
+// 5. 核心拍照函数
+async function takePhoto() {
+    // --- 视觉效果：快门闪烁 ---
     shutter.classList.remove('flash-animation');
-    void shutter.offsetWidth; // 触发重绘
+    void shutter.offsetWidth; // 强制重绘
     shutter.classList.add('flash-animation');
 
-    // 绘制当前视频帧到画布
+    // --- 图像捕捉：绘制到 Canvas ---
     const context = canvas.getContext('2d');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // 转换为图片
+    // 导出图片数据 (Base64)
     const imageData = canvas.toDataURL('image/png');
 
-    // 3. 更新右侧照片墙
+    // --- 本地反馈：更新右侧照片墙 ---
     const currentSlotIndex = photoCount % 6;
     const targetSlot = slots[currentSlotIndex];
 
-    // 清空现有内容并添加新图片
     targetSlot.innerHTML = '';
     const newImg = document.createElement('img');
     newImg.src = imageData;
+    // 这里的 CSS 已经处理了泛黄滤镜
     targetSlot.appendChild(newImg);
 
     photoCount++;
-    
-    // 获取已有的照片列表
-    let photos = JSON.parse(localStorage.getItem('capturedPhotos') || '[]');
-    // 将新照片插入到数组开头（模拟最新消息）
-    photos.unshift(imageData); 
-    // 只保留最近的6张，或者根据需要保留更多
-    if(photos.length > 12) photos.pop();
-    localStorage.setItem('capturedPhotos', JSON.stringify(photos));
+
+    // --- 云端同步：异步上传 ---
+    // 我们不需要等待上传完成才允许下一次拍照，所以不加 await
+    uploadToCloud(imageData);
 }
 
+// 绑定按钮事件
 snapBtn.addEventListener('click', takePhoto);
 
-// 初始化
+// 初始化摄像头
 setupCamera();
