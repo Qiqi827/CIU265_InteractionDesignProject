@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>虚拟拍立得墙</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <section class="camera-section">
+            <div class="viewfinder-container" id="viewfinder-container">
+                <video id="video" autoplay playsinline></video>
+                <div class="shutter-overlay" id="shutter-overlay"></div>
+            </div>
+            <button id="snap-btn">CAPTURE</button>
+        </section>
+
+        <section class="wall-section">
+            <div class="photo-wall" id="photo-wall">
+                <div class="photo-slot" data-index="0"></div>
+                <div class="photo-slot" data-index="1"></div>
+                <div class="photo-slot" data-index="2"></div>
+                <div class="photo-slot" data-index="3"></div>
+                <div class="photo-slot" data-index="4"></div>
+                <div class="photo-slot" data-index="5"></div>
+            </div>
+        </section>
+    </div>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <script src="script.js"></script>
+</body>
+</html>

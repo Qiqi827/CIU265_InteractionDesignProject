@@ -1,0 +1,154 @@
+:root {
+    --bg-color: #f4f4f2;
+    --camera-bg: #222;
+    --accent-red: #e63946;
+}
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    display: flex;
+    width: 90vw;
+    height: 80vh;
+    gap: 40px;
+}
+
+/* 左侧取景器 */
+.camera-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.viewfinder-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 4 / 3;
+    background: var(--camera-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+#video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 快门闪烁效果 */
+.shutter-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.flash-animation {
+    animation: shutter-flash 0.4s ease-out;
+}
+
+@keyframes shutter-flash {
+    0% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 0; transform: scale(0.95); }
+    100% { opacity: 0; transform: scale(1); }
+}
+
+#snap-btn {
+    margin-top: 20px;
+    padding: 15px 40px;
+    background-color: var(--accent-red);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+#snap-btn:active {
+    transform: scale(0.9);
+}
+
+/* 右侧照片墙 */
+.wall-section {
+    flex: 1.5;
+    background: #e5e5e5; /* 模拟墙面 */
+    border-radius: 12px;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.photo-wall {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+}
+
+.photo-slot {
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    border: 8px solid white;
+    border-bottom: 24px solid white; /* 模拟拍立得边缘 */
+    transition: all 0.5s ease;
+}
+
+/* 给照片位一点随机旋转 */
+.photo-slot:nth-child(odd) { transform: rotate(-2deg); }
+.photo-slot:nth-child(even) { transform: rotate(2deg); }
+
+/* ========================================================= */
+/* 修改部分：应用泛黄滤镜和动画                          */
+/* ========================================================= */
+.photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    
+    /* 1. 永久应用老照片滤镜 */
+    /* 核心是 sepia（褐色），配合 hue-rotate（色相旋转，这里让它偏黄而不是偏红） */
+    /* 并稍微降低一点饱和度 */
+    filter: sepia(0.7) hue-rotate(-15deg) saturate(1.2) contrast(0.95);
+    
+    /* 2. 这里的动画主要是处理渐现，不再需要复杂的滤镜过渡 */
+    animation: fadeInFaded 1s ease-in;
+}
+
+/* 重新定义一个专用的 fadeIn 动画，只需淡入即可，因为滤镜已经常驻了 */
+@keyframes fadeInFaded {
+    0% { 
+        opacity: 0; 
+        /* 刚出现时加一点点高亮和模糊，模拟照片显影 */
+        filter: sepia(0.7) hue-rotate(-15deg) saturate(1.2) contrast(0.95) brightness(1.5) blur(2px);
+    }
+    100% { 
+        opacity: 1; 
+        /* 最终状态回到 img 定义的常驻滤镜 */
+    }
+}
+/* ========================================================= */
