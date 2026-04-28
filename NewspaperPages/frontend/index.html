@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Virtual Polaroid - Viewfinder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <section class="camera-section">
+            <div class="viewfinder-container">
+                <video id="video" autoplay playsinline></video>
+                <div class="shutter-overlay" id="shutter-overlay"></div>
+            </div>
+            <button id="snap-btn">CAPTURE</button>
+            <button id="reset-btn">CLEAR ALL PHOTOS</button>
+            <p style="margin-top:10px;"><a href="newspaper.html" target="_blank">Open newspaper view to see sync →</a></p>
+        </section>
+
+        <section class="wall-section">
+            <div class="photo-wall">
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
+                <div class="photo-slot"></div>
+            </div>
+        </section>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <canvas id="canvas" style="display:none;"></canvas>
+    
+    <script type="module" src="script.js"></script>
+</body>
+</html>

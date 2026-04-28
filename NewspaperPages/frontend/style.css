@@ -1,0 +1,189 @@
+:root {
+    --bg-color: #f4f4f2;
+    --camera-bg: #222;
+    --accent-red: #e63946;
+}
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    display: flex;
+    width: 90vw;
+    height: 80vh;
+    gap: 40px;
+}
+
+/* Left viewfinder */
+.camera-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.viewfinder-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 4 / 3;
+    background: var(--camera-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+#video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Shutter flash effect */
+.shutter-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.flash-animation {
+    animation: shutter-flash 0.4s ease-out;
+}
+
+@keyframes shutter-flash {
+    0% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 0; transform: scale(0.95); }
+    100% { opacity: 0; transform: scale(1); }
+}
+
+#snap-btn {
+    margin-top: 20px;
+    padding: 15px 40px;
+    background-color: var(--accent-red);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+#snap-btn:active {
+    transform: scale(0.9);
+}
+
+#reset-btn {
+    margin-top: 10px;
+    padding: 10px 22px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 999px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#reset-btn:active {
+    transform: scale(0.97);
+}
+
+/* Right photo wall */
+.wall-section {
+    flex: 1.5;
+    background: #e5e5e5; /* Simulated wall texture */
+    border-radius: 12px;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.photo-wall {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+}
+
+.photo-slot {
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    border: 8px solid white;
+    border-bottom: 24px solid white; /* Polaroid-style bottom edge */
+    transition: all 0.5s ease;
+}
+
+/* Add slight random rotation for each slot */
+.photo-slot:nth-child(odd) { transform: rotate(-2deg); }
+.photo-slot:nth-child(even) { transform: rotate(2deg); }
+
+/* ========================================================= */
+
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #1f8f4a;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 9999;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+/* Updated section: old-photo filter and animation          */
+/* ========================================================= */
+.photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    
+    /* 1. Always apply old-photo filter */
+    /* Sepia with a slight hue shift and reduced saturation */
+    filter: sepia(0.7) hue-rotate(-15deg) saturate(1.2) contrast(0.95);
+    
+    /* 2. Keep animation simple and focused on fade-in */
+    animation: fadeInFaded 1s ease-in;
+}
+
+/* Dedicated fade-in animation; base filter is always active */
+@keyframes fadeInFaded {
+    0% { 
+        opacity: 0; 
+        /* Slight bloom and blur to mimic development */
+        filter: sepia(0.7) hue-rotate(-15deg) saturate(1.2) contrast(0.95) brightness(1.5) blur(2px);
+    }
+    100% { 
+        opacity: 1; 
+        /* End at the base filter defined on img */
+    }
+}
+/* ========================================================= */
