@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Public Newsroom Desk — Editor</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/editor.css">
+</head>
+<body class="editor-body">
+  <div class="workspace" id="workspace" hidden>
+    <header class="workspace-header">
+      <p class="workspace-badge">Exhibition · Editorial Console</p>
+      <h1>Public Newsroom Desk</h1>
+      <p class="workspace-lead">Select five editorial variables to shape a public news draft.</p>
+      <ol class="workflow-steps" aria-label="Editorial workflow">
+        <li><span class="step-num">1</span> Choose variables</li>
+        <li><span class="step-num">2</span> Review draft</li>
+        <li><span class="step-num">3</span> Send to newsroom</li>
+        <li><span class="step-num">4</span> Publish with typewriter</li>
+      </ol>
+    </header>
+
+    <form id="editor-form" class="workspace-main" autocomplete="off">
+      <section class="workspace-section" aria-labelledby="subject-heading">
+        <div class="section-head">
+          <h2 id="subject-heading">Subject <span class="section-zh">主体</span></h2>
+          <p class="section-note">Who or what is at the centre of this dispatch?</p>
+        </div>
+        <div class="var-grid var-grid--cards" id="subject-grid" role="listbox" aria-label="Subject"></div>
+      </section>
+
+      <section class="workspace-section" aria-labelledby="action-heading">
+        <div class="section-head">
+          <h2 id="action-heading">Action <span class="section-zh">事件</span></h2>
+          <p class="section-note">What happens in the story?</p>
+        </div>
+        <div class="var-grid var-grid--cards" id="action-grid" role="listbox" aria-label="Action"></div>
+      </section>
+
+      <section class="workspace-section" aria-labelledby="where-heading">
+        <div class="section-head">
+          <h2 id="where-heading">Where <span class="section-zh">地点</span></h2>
+          <p class="section-note">Which city space anchors the report?</p>
+        </div>
+        <div class="var-grid var-grid--cards" id="where-grid" role="listbox" aria-label="Where"></div>
+      </section>
+
+      <div class="workspace-split">
+        <section class="workspace-section" aria-labelledby="time-heading">
+          <div class="section-head">
+            <h2 id="time-heading">Time <span class="section-zh">年代滤镜</span></h2>
+            <p class="section-note">Period style filter — not a search of real archives.</p>
+          </div>
+          <div class="period-bar" id="time-bar" role="group" aria-label="Time period filter"></div>
+        </section>
+
+        <section class="workspace-section" aria-labelledby="tone-heading">
+          <div class="section-head">
+            <h2 id="tone-heading">Tone <span class="section-zh">语气 / 立场</span></h2>
+            <p class="section-note">Editorial framing only — facts stay the same.</p>
+          </div>
+          <div class="framing-grid" id="tone-grid" role="group" aria-label="Tone"></div>
+        </section>
+      </div>
+
+      <section class="workspace-section draft-section" aria-labelledby="draft-heading">
+        <div class="section-head">
+          <h2 id="draft-heading">Current draft</h2>
+          <p class="section-note">Editor's note — in preparation, not yet published.</p>
+        </div>
+
+        <article class="draft-board" id="draft-board" aria-live="polite">
+          <p class="draft-empty">Choose all five variables to assemble your desk note.</p>
+        </article>
+
+        <p class="draft-hint" id="draft-hint" hidden>Please complete all editorial variables.</p>
+
+        <div class="draft-actions">
+          <button type="submit" class="btn-send" id="send-btn" disabled>
+            <span class="btn-send-label">Send to newsroom</span>
+            <span class="btn-send-sub">发送到编辑部</span>
+          </button>
+          <div class="status-banner" id="status-banner" role="status" aria-live="polite" hidden></div>
+        </div>
+      </section>
+
+      <p class="workspace-disclaimer">
+        Archive-inspired speculative copy for the exhibition — not verified historical reporting.
+      </p>
+    </form>
+  </div>
+
+  <p class="editor-loading" id="editor-loading">Loading editorial database…</p>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/templateEngine.js"></script>
+  <script src="/js/editor.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community News Wall — Display</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/display.css">
+</head>
+<body class="display-body">
+  <div class="display-frame">
+    <article class="display-paper state-idle" id="display-root">
+      <header class="masthead">
+        <div class="edition">
+          <span>Vol. CIU · Speculative Edition</span>
+          <span id="display-clock">—</span>
+        </div>
+        <h1>The Evening Bulletin</h1>
+        <p class="tagline">Archive-inspired community news wall</p>
+      </header>
+
+      <div class="display-content">
+        <section class="idle-scene" aria-label="Newsroom idle">
+          <div class="desk-icon" aria-hidden="true">✎</div>
+          <h2>Newsroom standing by</h2>
+          <p>
+            The public desk is open. When a visitor sends a draft from the editor,
+            this wall will show a waiting notice until the typewriter key is pressed.
+          </p>
+          <p class="status-pill" style="margin-top: 2rem;">Awaiting dispatch</p>
+        </section>
+
+        <section class="waiting-scene" aria-label="Draft waiting">
+          <p class="status-pill">Draft on desk</p>
+          <h2>Draft received. Waiting for typewriter confirmation.</h2>
+          <p id="waiting-summary">
+            A speculative article is ready for publication. Press the hidden key on the typewriter to print to the wall.
+          </p>
+          <p class="typewriter-hint">⌨ Press the typewriter key to publish</p>
+        </section>
+
+        <section class="article-scene" aria-label="Published article">
+          <h2 class="headline" id="article-title"></h2>
+          <p class="byline" id="article-byline"></p>
+          <p class="body-text" id="article-body"></p>
+          <dl class="article-meta article-meta--five">
+            <div>
+              <dt>Subject</dt>
+              <dd id="meta-subject"></dd>
+            </div>
+            <div>
+              <dt>Action</dt>
+              <dd id="meta-action"></dd>
+            </div>
+            <div>
+              <dt>Where</dt>
+              <dd id="meta-where"></dd>
+            </div>
+            <div>
+              <dt>Time</dt>
+              <dd id="meta-time"></dd>
+            </div>
+            <div>
+              <dt>Tone</dt>
+              <dd id="meta-tone"></dd>
+            </div>
+          </dl>
+          <span class="tag-archive" id="article-tag">Archive-inspired generated article.</span>
+        </section>
+      </div>
+    </article>
+  </div>
+
+  <div class="display-controls" title="Staff controls (testing)">
+    <span class="connection-dot" id="connection-dot" aria-hidden="true"></span>
+    <button type="button" id="btn-publish" title="Simulate typewriter PUBLISH">Publish</button>
+    <button type="button" id="btn-reset" title="Return to idle">Reset</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/display.js"></script>
+</body>
+</html>

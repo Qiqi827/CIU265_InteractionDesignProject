@@ -1,0 +1,177 @@
+{
+  "articleLabel": "Archive-inspired generated article. This is not an original historical news article.",
+  "editorDraftLabel": "Archive-inspired generated draft, not a historical article.",
+  "subjects": [
+    {
+      "id": "citizens",
+      "title": "The citizens",
+      "description": "People who pass through, gather, and give meaning to the square.",
+      "tags": ["public", "community"]
+    },
+    {
+      "id": "students",
+      "title": "The students",
+      "description": "Young voices testing ideas, traditions, and belonging in the city.",
+      "tags": ["student culture", "city life"]
+    },
+    {
+      "id": "journalists",
+      "title": "The journalists",
+      "description": "Reporters, editors, and witnesses shaping what becomes public memory.",
+      "tags": ["journalism", "memory"]
+    },
+    {
+      "id": "monument",
+      "title": "The monument",
+      "description": "A fixed form in the square that stories circle around and reinterpret.",
+      "tags": ["memory", "public space"]
+    },
+    {
+      "id": "city",
+      "title": "The city",
+      "description": "Gothenburg as a living editor—streets, institutions, and everyday ritual.",
+      "tags": ["city life", "civic"]
+    }
+  ],
+  "actions": [
+    {
+      "id": "gather_event",
+      "title": "gather for a public event",
+      "description": "A crowd forms, programs are read, and the square becomes a stage.",
+      "tags": ["public", "civic"]
+    },
+    {
+      "id": "question_memory",
+      "title": "question an old memory",
+      "description": "A familiar place is reconsidered through fragments of the past.",
+      "tags": ["memory", "debate"]
+    },
+    {
+      "id": "celebrate_tradition",
+      "title": "celebrate a local tradition",
+      "description": "Ritual returns—music, speeches, and shared food at the centre.",
+      "tags": ["community", "culture"]
+    },
+    {
+      "id": "report_forgotten",
+      "title": "report a forgotten story",
+      "description": "Notes from the archive desk reopen a thread the city stopped telling.",
+      "tags": ["journalism", "memory"]
+    },
+    {
+      "id": "reshape_space",
+      "title": "reshape the public space",
+      "description": "Benches move, paths change, and neighbors argue over who the square is for.",
+      "tags": ["public space", "civic"]
+    }
+  ],
+  "locations": [
+    {
+      "id": "harry_hjornes_plats",
+      "title": "Harry Hjörnes Plats",
+      "description": "A public square connected to journalism, memory, and city life.",
+      "tags": ["public space", "journalism"]
+    },
+    {
+      "id": "central_gothenburg",
+      "title": "Central Gothenburg",
+      "description": "Trams, shop windows, and the steady rhythm of the inner city.",
+      "tags": ["city life"]
+    },
+    {
+      "id": "chalmers_area",
+      "title": "Chalmers area",
+      "description": "Campus paths where student culture meets the wider neighborhood.",
+      "tags": ["student culture", "city life"]
+    },
+    {
+      "id": "riverside",
+      "title": "the riverside",
+      "description": "Water, wind, and weekend crowds along the edge of the city.",
+      "tags": ["public space", "memory"]
+    },
+    {
+      "id": "public_square",
+      "title": "a public square",
+      "description": "An open civic room where voices compete for attention and belonging.",
+      "tags": ["public", "civic"]
+    }
+  ],
+  "times": [
+    {
+      "id": "1950s",
+      "title": "1950s",
+      "description": "Formal civic tone.",
+      "styleHint": "Use restrained official language and postwar civic optimism."
+    },
+    {
+      "id": "1970s",
+      "title": "1970s",
+      "description": "Social debate and public responsibility.",
+      "styleHint": "Use a socially aware local newspaper voice."
+    },
+    {
+      "id": "1980s",
+      "title": "1980s",
+      "description": "Local culture and city events.",
+      "styleHint": "Emphasise neighborhood colour and everyday city rhythm."
+    },
+    {
+      "id": "today",
+      "title": "Today",
+      "description": "Fragmented media voice.",
+      "styleHint": "Use a contemporary, multi-voice local feed tone."
+    }
+  ],
+  "tones": [
+    {
+      "id": "nostalgic",
+      "title": "Nostalgic",
+      "description": "Warm memory; soft focus on what was lost and found again.",
+      "styleHint": "Frame the article with gentle retrospection, not certainty."
+    },
+    {
+      "id": "critical",
+      "title": "Critical",
+      "description": "Emphasises tension, responsibility, and unresolved questions.",
+      "styleHint": "Frame the article around public concern and accountability."
+    },
+    {
+      "id": "civic",
+      "title": "Civic",
+      "description": "Shared duty, meetings, and collective problem-solving.",
+      "styleHint": "Emphasise community roles and public deliberation."
+    },
+    {
+      "id": "humorous",
+      "title": "Humorous",
+      "description": "Light human detail; the desk notices absurdity without mockery.",
+      "styleHint": "Allow wit in pacing and observation, not at the expense of dignity."
+    },
+    {
+      "id": "suspicious",
+      "title": "Suspicious",
+      "description": "Skeptical attention to gaps, silences, and who controls the narrative.",
+      "styleHint": "Highlight what is missing from the official account."
+    }
+  ],
+  "generationTemplates": {
+    "headlineTemplates": [
+      "{subjectTitle} {actionTitle} at {locationTitle}",
+      "A New Question Emerges at {locationTitle}",
+      "When {subjectTitle} Turn {locationTitle} Into a Public Story",
+      "{locationTitle}: {subjectTitle} {actionTitle}",
+      "Desk Copy — {timeTitle} Filter on {locationTitle}"
+    ],
+    "bodyTemplates": [
+      "Through a {toneTitle} editorial lens, this archive-inspired dispatch imagines how {subjectTitle} might {actionTitle} at {locationTitle}. The {timeTitle} filter shapes the language and rhythm of the report without claiming to reproduce a real historical article. {timeStyleHint}",
+      "Set against {locationTitle}, the story follows {subjectTitle} as they {actionTitle}. Written with a {toneTitle} stance and a {timeTitle} newspaper style, the article presents a speculative local news fragment rather than an original archive record. {toneStyleHint}",
+      "At {locationTitle}, {subjectTitle} {actionTitle}—a scene assembled from civic fragments, not verified fact. The desk applies a {timeTitle} period filter and a {toneTitle} framing: {toneDescription} This is exhibition copy, inspired by archives, not copied from them."
+    ],
+    "editorSummaryTemplates": [
+      "Desk assembles: {subjectTitle} · {actionTitle} · {locationTitle} · {timeTitle} period filter · {toneTitle} tone. Speculative draft only.",
+      "{subjectTitle} {actionTitle} at {locationTitle}. {toneTitle} framing under a {timeTitle} style—facts unchanged, voice editorial.",
+      "Working note: {locationTitle} hosts {subjectTitle} who {actionTitle}. {timeTitle} language filter + {toneTitle} stance. Not yet published."
+    ]
+  }
+}
