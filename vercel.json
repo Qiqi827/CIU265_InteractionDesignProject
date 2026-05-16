@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/NewspaperPages/frontend/newspaper.html"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/NewspaperPages/frontend/:path*"
+    }
+  ]
+}
