@@ -188,6 +188,27 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
+.terminal-status {
+  margin-top: 1.25rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  border: 1px solid #c5bbb0;
+  background: #f8f4eb;
+}
+
+.terminal-status.is-ok {
+  border-color: #4a6b4a;
+  background: #f0f6f0;
+  color: #2a4a2a;
+}
+
+.terminal-status.is-warn {
+  border-color: var(--accent);
+  background: #fff9f6;
+  color: var(--accent);
+}
+
 .article-meta dt {
   font-weight: 600;
   text-transform: uppercase;

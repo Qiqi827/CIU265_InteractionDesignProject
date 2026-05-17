@@ -1,177 +1,619 @@
 {
-  "articleLabel": "Archive-inspired generated article. This is not an original historical news article.",
-  "editorDraftLabel": "Archive-inspired generated draft, not a historical article.",
+  "labels": {
+    "draftLabel": "Archive-inspired generated draft, not a historical article.",
+    "articleLabel": "Archive-inspired generated article. This is not an original historical news article.",
+    "factNotice": "Facts come from the selected story fragment. Time and tone only change the editorial voice.",
+    "waitingNotice": "Awaiting send to newsroom — not published until typewriter key is pressed."
+  },
   "subjects": [
     {
       "id": "citizens",
       "title": "The citizens",
-      "description": "People who pass through, gather, and give meaning to the square.",
-      "tags": ["public", "community"]
+      "shortLabel": "public · community",
+      "draftText": "Editorial focus on people who gather, pass through, and give meaning to shared space.",
+      "roleType": "human_group",
+      "generationHint": "Frame as a collective urban presence—not as named individuals performing the event.",
+      "tags": [
+        "public",
+        "community"
+      ]
     },
     {
       "id": "students",
-      "title": "The students",
-      "description": "Young voices testing ideas, traditions, and belonging in the city.",
-      "tags": ["student culture", "city life"]
+      "title": "Chalmers students",
+      "shortLabel": "student culture · parade",
+      "draftText": "Focus on student traditions and how they temporarily reshape public visibility in the city.",
+      "roleType": "human_group",
+      "generationHint": "Treat students as a cultural group in the city, not as the literal organisers of every action in the fragment.",
+      "tags": [
+        "student culture",
+        "tradition"
+      ]
     },
     {
       "id": "journalists",
-      "title": "The journalists",
-      "description": "Reporters, editors, and witnesses shaping what becomes public memory.",
-      "tags": ["journalism", "memory"]
+      "title": "Local journalists",
+      "shortLabel": "newsroom · visibility",
+      "draftText": "Focus on who decides what becomes visible as local news and how the desk frames the story.",
+      "roleType": "institutional_actor",
+      "generationHint": "Emphasise editorial process and public visibility, not insider biography.",
+      "tags": [
+        "journalism",
+        "media"
+      ]
     },
     {
-      "id": "monument",
-      "title": "The monument",
-      "description": "A fixed form in the square that stories circle around and reinterpret.",
-      "tags": ["memory", "public space"]
+      "id": "tourists",
+      "title": "Tourists",
+      "shortLabel": "visitor gaze · city image",
+      "draftText": "Focus on how visitors read monuments, signs, and fragments of local history.",
+      "roleType": "human_group",
+      "generationHint": "Use visitor perspective without stereotyping or mockery.",
+      "tags": [
+        "visitor",
+        "city image"
+      ]
+    },
+    {
+      "id": "city_officials",
+      "title": "City officials",
+      "shortLabel": "governance · public space",
+      "draftText": "Focus on responsibility for how places are maintained, named, and used.",
+      "roleType": "institutional_actor",
+      "generationHint": "Discuss civic responsibility without inventing specific officials or accusations.",
+      "tags": [
+        "governance",
+        "planning"
+      ]
     },
     {
       "id": "city",
       "title": "The city",
-      "description": "Gothenburg as a living editor—streets, institutions, and everyday ritual.",
-      "tags": ["city life", "civic"]
-    }
-  ],
-  "actions": [
-    {
-      "id": "gather_event",
-      "title": "gather for a public event",
-      "description": "A crowd forms, programs are read, and the square becomes a stage.",
-      "tags": ["public", "civic"]
+      "shortLabel": "streets · ritual",
+      "draftText": "Focus on Gothenburg as a living editorial subject—streets, institutions, everyday rhythm.",
+      "roleType": "symbolic_actor",
+      "generationHint": "Personify the city cautiously; avoid claiming the city literally acts.",
+      "tags": [
+        "city life",
+        "civic"
+      ]
     },
     {
-      "id": "question_memory",
-      "title": "question an old memory",
-      "description": "A familiar place is reconsidered through fragments of the past.",
-      "tags": ["memory", "debate"]
-    },
-    {
-      "id": "celebrate_tradition",
-      "title": "celebrate a local tradition",
-      "description": "Ritual returns—music, speeches, and shared food at the centre.",
-      "tags": ["community", "culture"]
-    },
-    {
-      "id": "report_forgotten",
-      "title": "report a forgotten story",
-      "description": "Notes from the archive desk reopen a thread the city stopped telling.",
-      "tags": ["journalism", "memory"]
-    },
-    {
-      "id": "reshape_space",
-      "title": "reshape the public space",
-      "description": "Benches move, paths change, and neighbors argue over who the square is for.",
-      "tags": ["public space", "civic"]
+      "id": "forgotten_voices",
+      "title": "Forgotten voices",
+      "shortLabel": "archive edge · absence",
+      "draftText": "Focus on people and stories at the margin of archive and public memory.",
+      "roleType": "absent_voice",
+      "generationHint": "Signal absence and omission without inventing identifiable victims.",
+      "tags": [
+        "memory",
+        "absence"
+      ]
     }
   ],
   "locations": [
     {
       "id": "harry_hjornes_plats",
       "title": "Harry Hjörnes Plats",
-      "description": "A public square connected to journalism, memory, and city life.",
-      "tags": ["public space", "journalism"]
+      "shortLabel": "square · journalism · memory",
+      "draftText": "Scene: a square where journalism, city memory, and everyday movement meet.",
+      "locationType": "public_square",
+      "generationHint": "Anchor the report in this named square as civic and media memory.",
+      "tags": [
+        "journalism",
+        "public square"
+      ]
     },
     {
-      "id": "central_gothenburg",
-      "title": "Central Gothenburg",
-      "description": "Trams, shop windows, and the steady rhythm of the inner city.",
-      "tags": ["city life"]
+      "id": "the_monument",
+      "title": "The monument",
+      "shortLabel": "stone · public memory",
+      "draftText": "Scene: a fixed monument around which memory is read and questioned.",
+      "locationType": "monument",
+      "generationHint": "Treat the monument as a symbolic anchor, not a verified historical document.",
+      "tags": [
+        "monument",
+        "memory"
+      ]
     },
     {
-      "id": "chalmers_area",
-      "title": "Chalmers area",
-      "description": "Campus paths where student culture meets the wider neighborhood.",
-      "tags": ["student culture", "city life"]
+      "id": "chalmers_campus",
+      "title": "Chalmers campus",
+      "shortLabel": "campus · student life",
+      "draftText": "Scene: a student environment where traditions and public rituals often begin.",
+      "locationType": "campus",
+      "generationHint": "Situate student culture without claiming official university statements.",
+      "tags": [
+        "campus",
+        "tradition"
+      ]
     },
     {
-      "id": "riverside",
-      "title": "the riverside",
-      "description": "Water, wind, and weekend crowds along the edge of the city.",
-      "tags": ["public space", "memory"]
+      "id": "cortege_route",
+      "title": "The Cortège route",
+      "shortLabel": "parade route · street",
+      "draftText": "Scene: streets temporarily turned into a moving public stage.",
+      "locationType": "street_route",
+      "generationHint": "Describe movement through the city without precise route claims.",
+      "tags": [
+        "parade",
+        "street"
+      ]
     },
     {
       "id": "public_square",
-      "title": "a public square",
-      "description": "An open civic room where voices compete for attention and belonging.",
-      "tags": ["public", "civic"]
+      "title": "A public square",
+      "shortLabel": "gathering · strangers",
+      "draftText": "Scene: open ground where strangers briefly share the same story.",
+      "locationType": "public_square",
+      "generationHint": "Emphasise shared visibility and gathering.",
+      "tags": [
+        "public space",
+        "gathering"
+      ]
+    },
+    {
+      "id": "the_riverside",
+      "title": "The riverside",
+      "shortLabel": "waterfront · leisure",
+      "draftText": "Scene: waterfront where movement, leisure, and public life become visible.",
+      "locationType": "waterfront",
+      "generationHint": "Use waterfront atmosphere without specific event claims.",
+      "tags": [
+        "waterfront",
+        "city life"
+      ]
+    },
+    {
+      "id": "tram_stop",
+      "title": "A tram stop",
+      "shortLabel": "everyday · waiting",
+      "draftText": "Scene: a daily waiting place where urban rhythms briefly align.",
+      "locationType": "everyday_place",
+      "generationHint": "Keep scale modest—everyday life, not spectacle.",
+      "tags": [
+        "transport",
+        "routine"
+      ]
+    },
+    {
+      "id": "newsroom_desk",
+      "title": "The newsroom desk",
+      "shortLabel": "desk · framing",
+      "draftText": "Scene: symbolic editing space where fragments are selected and framed.",
+      "locationType": "editorial_space",
+      "generationHint": "Frame as editorial process, not a real GP newsroom transcript.",
+      "tags": [
+        "news making",
+        "archive"
+      ]
+    },
+    {
+      "id": "city_festival_stage",
+      "title": "A city festival stage",
+      "shortLabel": "stage · performance",
+      "draftText": "Scene: temporary stage where music and attention reshape the moment.",
+      "locationType": "festival_stage",
+      "generationHint": "Suggest festival energy without naming real performers.",
+      "tags": [
+        "festival",
+        "performance"
+      ]
+    },
+    {
+      "id": "forgotten_corner",
+      "title": "A forgotten corner",
+      "shortLabel": "quiet · overlooked",
+      "draftText": "Scene: a quiet place where stories sit outside the usual spotlight.",
+      "locationType": "marginal_place",
+      "generationHint": "Signal marginality without inventing hidden crimes.",
+      "tags": [
+        "forgotten voices",
+        "absence"
+      ]
     }
   ],
   "times": [
     {
-      "id": "1950s",
-      "title": "1950s",
-      "description": "Formal civic tone.",
-      "styleHint": "Use restrained official language and postwar civic optimism."
+      "id": "1920s_1930s",
+      "title": "1920s–1930s",
+      "subtitle": "Hjörne's Newsroom",
+      "shortLabel": "formal · local · civic",
+      "draftText": "Voice filter: early local press—formal, civic, confident in public order.",
+      "styleHint": "Use a formal, confident, early newspaper voice. Emphasise order, civic progress, and local news authority."
     },
     {
-      "id": "1970s",
-      "title": "1970s",
-      "description": "Social debate and public responsibility.",
-      "styleHint": "Use a socially aware local newspaper voice."
+      "id": "1940s_1950s",
+      "title": "1940s–1950s",
+      "subtitle": "Civic Authority",
+      "shortLabel": "serious · orderly · public",
+      "draftText": "Voice filter: institutional seriousness and shared civic responsibility.",
+      "styleHint": "Use a serious, orderly tone. Emphasise stability, institutions, and public duty."
     },
     {
-      "id": "1980s",
-      "title": "1980s",
-      "description": "Local culture and city events.",
-      "styleHint": "Emphasise neighborhood colour and everyday city rhythm."
+      "id": "1960s_1970s",
+      "title": "1960s–1970s",
+      "subtitle": "Public Debate",
+      "shortLabel": "social · collective · questioning",
+      "draftText": "Voice filter: socially aware debate and collective questions in public life.",
+      "styleHint": "Use a debate-oriented tone. Emphasise participation, responsibility, and open questions."
+    },
+    {
+      "id": "1980s_1990s",
+      "title": "1980s–1990s",
+      "subtitle": "Local City Culture",
+      "shortLabel": "events · students · everyday",
+      "draftText": "Voice filter: lively local culture, crowds, students, everyday city events.",
+      "styleHint": "Use a lively local newspaper voice. Emphasise city events, youth culture, and public life."
+    },
+    {
+      "id": "2000s_2010s",
+      "title": "2000s–2010s",
+      "subtitle": "Digital Transition",
+      "shortLabel": "online · fast · changing",
+      "draftText": "Voice filter: print meeting online—updates, visibility, changing reader habits.",
+      "styleHint": "Use a hybrid print-and-digital tone. Emphasise circulation, reaction, and media change."
     },
     {
       "id": "today",
       "title": "Today",
-      "description": "Fragmented media voice.",
-      "styleHint": "Use a contemporary, multi-voice local feed tone."
+      "subtitle": "Fragmented Media",
+      "shortLabel": "platforms · attention · perspectives",
+      "draftText": "Voice filter: fragmented attention, multiple perspectives, fast circulation.",
+      "styleHint": "Use a contemporary, reflective, slightly fragmented media voice. Emphasise visibility and uncertainty."
     }
   ],
   "tones": [
     {
       "id": "nostalgic",
       "title": "Nostalgic",
-      "description": "Warm memory; soft focus on what was lost and found again.",
-      "styleHint": "Frame the article with gentle retrospection, not certainty."
+      "shortLabel": "memory · tradition",
+      "draftText": "Stance: warm memory and what the city chooses to keep.",
+      "styleHint": "Use a warm, reflective tone focused on continuity and remembrance.",
+      "doNot": "Do not invent sentimental backstories or false personal histories."
     },
     {
       "id": "critical",
       "title": "Critical",
-      "description": "Emphasises tension, responsibility, and unresolved questions.",
-      "styleHint": "Frame the article around public concern and accountability."
+      "shortLabel": "debate · responsibility",
+      "draftText": "Stance: questions of power, exclusion, and unresolved public responsibility.",
+      "styleHint": "Use an analytical tone focused on debate and responsibility.",
+      "doNot": "Do not state unverified accusations as established fact."
     },
     {
       "id": "civic",
       "title": "Civic",
-      "description": "Shared duty, meetings, and collective problem-solving.",
-      "styleHint": "Emphasise community roles and public deliberation."
+      "shortLabel": "citizens · shared life",
+      "draftText": "Stance: shared space, participation, and collective urban meaning.",
+      "styleHint": "Use a public-facing, community-oriented tone.",
+      "doNot": "Do not flatten conflict into vague harmony."
     },
     {
       "id": "humorous",
       "title": "Humorous",
-      "description": "Light human detail; the desk notices absurdity without mockery.",
-      "styleHint": "Allow wit in pacing and observation, not at the expense of dignity."
+      "shortLabel": "irony · spectacle",
+      "draftText": "Stance: irony and the slightly absurd side of public life.",
+      "styleHint": "Use playful newspaper irony without becoming unserious reportage.",
+      "doNot": "Do not mock real groups, disasters, suffering, or identifiable individuals."
     },
     {
       "id": "suspicious",
       "title": "Suspicious",
-      "description": "Skeptical attention to gaps, silences, and who controls the narrative.",
-      "styleHint": "Highlight what is missing from the official account."
+      "shortLabel": "uncertainty · traces",
+      "draftText": "Stance: cautious questions—what the visible story may not show.",
+      "styleHint": "Use investigative caution and open questions.",
+      "doNot": "Do not invent conspiracy claims, criminal accusations, or hoaxes."
+    },
+    {
+      "id": "celebratory",
+      "title": "Celebratory",
+      "shortLabel": "joy · ritual",
+      "draftText": "Stance: shared joy, ritual, and festive public gathering.",
+      "styleHint": "Use an uplifting tone focused on togetherness and seasonal energy.",
+      "doNot": "Do not ignore tension where the fragment implies debate or harm."
+    }
+  ],
+  "storyFragments": [
+    {
+      "id": "chalmers_cortege",
+      "title": "Chalmers Cortège enters the city",
+      "shortLabel": "student parade · public streets",
+      "draftText": "A student parade turns streets into temporary public spectacle.",
+      "baseFact": "Chalmers Cortège is a student parade tradition in Gothenburg, known for humour, handmade floats, and public performance.",
+      "storyAngle": "How the city watches student humour and public spectacle.",
+      "allowedSubjects": [
+        "students",
+        "citizens",
+        "tourists",
+        "city"
+      ],
+      "allowedLocations": [
+        "chalmers_campus",
+        "cortege_route",
+        "public_square"
+      ],
+      "allowedTimes": [
+        "1920s_1930s",
+        "1960s_1970s",
+        "1980s_1990s",
+        "today"
+      ],
+      "allowedTones": [
+        "humorous",
+        "civic",
+        "nostalgic",
+        "critical"
+      ],
+      "headlineSeeds": [
+        "When Student Humour Turns the Street Into a Stage",
+        "{locationTitle} Watches the Cortège Pass",
+        "A Parade Enters Public View"
+      ],
+      "editorNote": "Parade fragment—subject is editorial lens, not parade organiser."
+    },
+    {
+      "id": "valborg_spring",
+      "title": "Valborg welcomes spring in public",
+      "shortLabel": "spring songs · bonfires",
+      "draftText": "Spring ritual gathers the city around songs and shared seasonal markers.",
+      "baseFact": "Valborg in Sweden marks spring with public gatherings, songs, and bonfires that turn ordinary places into ritual space.",
+      "storyAngle": "Seasonal welcome as a moment of shared civic visibility.",
+      "allowedSubjects": [
+        "citizens",
+        "students",
+        "city"
+      ],
+      "allowedLocations": [
+        "public_square",
+        "the_riverside",
+        "harry_hjornes_plats"
+      ],
+      "allowedTimes": [
+        "1940s_1950s",
+        "1960s_1970s",
+        "1980s_1990s",
+        "today"
+      ],
+      "allowedTones": [
+        "celebratory",
+        "civic",
+        "nostalgic"
+      ],
+      "headlineSeeds": [
+        "Spring Arrives at {locationTitle}",
+        "Valborg Draws the City Together",
+        "A Seasonal Gathering in Public"
+      ],
+      "editorNote": "Seasonal fragment—keep facts ritual, not weather forecast."
+    },
+    {
+      "id": "midsummer_gathering",
+      "title": "Midsummer gathers the city outdoors",
+      "shortLabel": "flowers · songs · summer",
+      "draftText": "Summer ritual makes seasonal life visible in parks and waterfronts.",
+      "baseFact": "Midsummer in Sweden brings flowers, songs, and gatherings that make seasonal ritual visible in public space.",
+      "storyAngle": "Summer leisure read through public ritual and city image.",
+      "allowedSubjects": [
+        "citizens",
+        "tourists",
+        "city"
+      ],
+      "allowedLocations": [
+        "the_riverside",
+        "public_square",
+        "city_festival_stage"
+      ],
+      "allowedTimes": [
+        "1940s_1950s",
+        "1980s_1990s",
+        "today"
+      ],
+      "allowedTones": [
+        "celebratory",
+        "nostalgic",
+        "civic"
+      ],
+      "headlineSeeds": [
+        "Midsummer Light at {locationTitle}",
+        "A Summer Ritual Meets the City",
+        "Seasonal Gathering in Public View"
+      ],
+      "editorNote": "Summer fragment—avoid inventing specific performers or venues beyond the scene."
+    },
+    {
+      "id": "lucia_procession",
+      "title": "Lucia carries light through winter streets",
+      "shortLabel": "winter light · procession",
+      "draftText": "Winter procession brings songs and symbolic light into darker months.",
+      "baseFact": "Lucia processions bring songs and candlelight into winter streets, turning symbolic light into a shared civic image.",
+      "storyAngle": "Symbolic light as winter public imagery.",
+      "allowedSubjects": [
+        "citizens",
+        "students",
+        "forgotten_voices"
+      ],
+      "allowedLocations": [
+        "public_square",
+        "harry_hjornes_plats",
+        "tram_stop"
+      ],
+      "allowedTimes": [
+        "1940s_1950s",
+        "1960s_1970s",
+        "today"
+      ],
+      "allowedTones": [
+        "nostalgic",
+        "civic",
+        "celebratory"
+      ],
+      "headlineSeeds": [
+        "Light Moves Through {locationTitle}",
+        "Winter Streets Hold a Procession",
+        "Lucia in the City"
+      ],
+      "editorNote": "Procession fragment—focus on symbolism, not religious doctrine."
+    },
+    {
+      "id": "public_square_gathering",
+      "title": "A public square becomes shared ground",
+      "shortLabel": "gathering · expression",
+      "draftText": "An open square holds gathering, expression, and public attention.",
+      "baseFact": "Public squares in Gothenburg function as shared ground where citizens, officials, and media align around visible events.",
+      "storyAngle": "Shared ground and who is allowed to be seen there.",
+      "allowedSubjects": [
+        "citizens",
+        "city_officials",
+        "journalists",
+        "forgotten_voices"
+      ],
+      "allowedLocations": [
+        "public_square",
+        "harry_hjornes_plats",
+        "the_monument"
+      ],
+      "allowedTimes": [
+        "1960s_1970s",
+        "1980s_1990s",
+        "2000s_2010s",
+        "today"
+      ],
+      "allowedTones": [
+        "civic",
+        "critical",
+        "celebratory"
+      ],
+      "headlineSeeds": [
+        "{locationTitle} Becomes Shared Ground",
+        "When the Square Holds Attention",
+        "Public Life at {locationTitle}"
+      ],
+      "editorNote": "Square fragment—do not imply illegal activity without evidence."
+    },
+    {
+      "id": "monument_memory_debate",
+      "title": "A monument prompts public memory debate",
+      "shortLabel": "monument · memory",
+      "draftText": "A monument becomes a fixed point for reading and questioning memory.",
+      "baseFact": "Stone monuments act as fixed points around which public memory is read, questioned, and sometimes rewritten.",
+      "storyAngle": "What the city chooses to remember and what it debates.",
+      "allowedSubjects": [
+        "citizens",
+        "journalists",
+        "city_officials",
+        "forgotten_voices"
+      ],
+      "allowedLocations": [
+        "the_monument",
+        "harry_hjornes_plats",
+        "forgotten_corner"
+      ],
+      "allowedTimes": [
+        "1960s_1970s",
+        "1980s_1990s",
+        "2000s_2010s",
+        "today"
+      ],
+      "allowedTones": [
+        "critical",
+        "nostalgic",
+        "suspicious",
+        "civic"
+      ],
+      "headlineSeeds": [
+        "Memory Stands at {locationTitle}",
+        "A Monument Becomes Argument",
+        "What the City Remembers"
+      ],
+      "editorNote": "Monument fragment—question memory, do not invent monument history."
+    },
+    {
+      "id": "forgotten_story_surfaces",
+      "title": "A forgotten story returns to the desk",
+      "shortLabel": "archive · overlooked",
+      "draftText": "An overlooked story re-enters attention through a local news frame.",
+      "baseFact": "Newsrooms sometimes return overlooked stories—fragments never fully published, or voices at the archive's edge.",
+      "storyAngle": "Return of absence to the editorial desk.",
+      "allowedSubjects": [
+        "journalists",
+        "forgotten_voices",
+        "citizens"
+      ],
+      "allowedLocations": [
+        "newsroom_desk",
+        "forgotten_corner",
+        "harry_hjornes_plats"
+      ],
+      "allowedTimes": [
+        "1920s_1930s",
+        "1960s_1970s",
+        "2000s_2010s",
+        "today"
+      ],
+      "allowedTones": [
+        "nostalgic",
+        "critical",
+        "suspicious",
+        "civic"
+      ],
+      "headlineSeeds": [
+        "A Fragment Returns at {locationTitle}",
+        "The Desk Reopens a Line",
+        "An Overlooked Story Surfaces"
+      ],
+      "editorNote": "Archive fragment—do not invent named victims or scandals."
+    },
+    {
+      "id": "city_photograph_evidence",
+      "title": "A photograph turns the city into evidence",
+      "shortLabel": "photography · frame",
+      "draftText": "A photograph makes an ordinary moment reportable, archivable, or questionable.",
+      "baseFact": "A single photograph can turn an ordinary city moment into evidence—a frame treated as reportable reality.",
+      "storyAngle": "The image as editorial evidence, not truth on its own.",
+      "allowedSubjects": [
+        "journalists",
+        "tourists",
+        "citizens",
+        "students"
+      ],
+      "allowedLocations": [
+        "tram_stop",
+        "public_square",
+        "the_riverside",
+        "cortege_route"
+      ],
+      "allowedTimes": [
+        "1980s_1990s",
+        "2000s_2010s",
+        "today"
+      ],
+      "allowedTones": [
+        "suspicious",
+        "critical",
+        "civic"
+      ],
+      "headlineSeeds": [
+        "An Image From {locationTitle}",
+        "When a Photograph Enters the Record",
+        "The City in a Single Frame"
+      ],
+      "editorNote": "Photo fragment—do not claim the image shows crime or guilt."
     }
   ],
   "generationTemplates": {
     "headlineTemplates": [
-      "{subjectTitle} {actionTitle} at {locationTitle}",
-      "A New Question Emerges at {locationTitle}",
-      "When {subjectTitle} Turn {locationTitle} Into a Public Story",
-      "{locationTitle}: {subjectTitle} {actionTitle}",
-      "Desk Copy — {timeTitle} Filter on {locationTitle}"
+      "Desk Copy — {storyFragmentTitle}",
+      "{storyAngle}",
+      "A {toneTitle} Reading at {locationTitle}"
     ],
     "bodyTemplates": [
-      "Through a {toneTitle} editorial lens, this archive-inspired dispatch imagines how {subjectTitle} might {actionTitle} at {locationTitle}. The {timeTitle} filter shapes the language and rhythm of the report without claiming to reproduce a real historical article. {timeStyleHint}",
-      "Set against {locationTitle}, the story follows {subjectTitle} as they {actionTitle}. Written with a {toneTitle} stance and a {timeTitle} newspaper style, the article presents a speculative local news fragment rather than an original archive record. {toneStyleHint}",
-      "At {locationTitle}, {subjectTitle} {actionTitle}—a scene assembled from civic fragments, not verified fact. The desk applies a {timeTitle} period filter and a {toneTitle} framing: {toneDescription} This is exhibition copy, inspired by archives, not copied from them."
+      "{baseFact} This archive-inspired dispatch places {subjectTitle} at the centre of the story and situates it at {locationTitle}. The {timeTitle} filter shapes the newspaper voice, while the {toneTitle} stance changes what the article chooses to emphasise.",
+      "{baseFact} {storyAngle} The report centres on {subjectTitle} at {locationTitle}. The {timeTitle} period filter adjusts language only—not a claim of verified archive fact."
     ],
     "editorSummaryTemplates": [
-      "Desk assembles: {subjectTitle} · {actionTitle} · {locationTitle} · {timeTitle} period filter · {toneTitle} tone. Speculative draft only.",
-      "{subjectTitle} {actionTitle} at {locationTitle}. {toneTitle} framing under a {timeTitle} style—facts unchanged, voice editorial.",
-      "Working note: {locationTitle} hosts {subjectTitle} who {actionTitle}. {timeTitle} language filter + {toneTitle} stance. Not yet published."
+      "{editorNote} Focus: {subjectTitle} · Scene: {locationTitle} · {timeTitle} filter · {toneTitle} stance.",
+      "Fragment: {storyFragmentTitle}. {editorNote}",
+      "Desk note — {storyFragmentTitle}. {subjectTitle} at {locationTitle}; {timeTitle} voice; {toneTitle} framing."
     ]
   }
 }

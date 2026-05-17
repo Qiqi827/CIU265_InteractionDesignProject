@@ -16,7 +16,7 @@
           <span id="display-clock">—</span>
         </div>
         <h1>The Evening Bulletin</h1>
-        <p class="tagline">Archive-inspired community news wall</p>
+        <p class="tagline">Local newsroom monitor — terminal wall syncs on publish</p>
       </header>
 
       <div class="display-content">
@@ -36,7 +36,7 @@
           <p id="waiting-summary">
             A speculative article is ready for publication. Press the hidden key on the typewriter to print to the wall.
           </p>
-          <p class="typewriter-hint">⌨ Press the typewriter key to publish</p>
+          <p class="typewriter-hint">⌨ Press the typewriter key to publish to this screen and the terminal wall</p>
         </section>
 
         <section class="article-scene" aria-label="Published article">
@@ -49,8 +49,8 @@
               <dd id="meta-subject"></dd>
             </div>
             <div>
-              <dt>Action</dt>
-              <dd id="meta-action"></dd>
+              <dt>Story fragment</dt>
+              <dd id="meta-fragment"></dd>
             </div>
             <div>
               <dt>Where</dt>
@@ -66,6 +66,7 @@
             </div>
           </dl>
           <span class="tag-archive" id="article-tag">Archive-inspired generated article.</span>
+          <p class="terminal-status" id="terminal-status" hidden></p>
         </section>
       </div>
     </article>

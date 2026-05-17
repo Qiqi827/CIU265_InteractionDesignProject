@@ -5,13 +5,16 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test:terminal": "node scripts/test-terminal-connection.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "@serialport/parser-readline": "^12.0.0",
+    "@supabase/supabase-js": "^2.57.0",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "serialport": "^12.0.0",
     "socket.io": "^4.8.1"

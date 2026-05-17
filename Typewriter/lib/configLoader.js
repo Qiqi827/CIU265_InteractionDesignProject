@@ -18,25 +18,50 @@ function loadNewsConfig(force = false) {
 }
 
 function findOption(list, id) {
-  if (!list?.length) return null;
+  if (!list?.length || !id) return null;
   return list.find((item) => item.id === id) || null;
 }
 
-function resolveSelection(config, { subjectId, actionId, locationId, timeId, toneId }) {
+function isAllowedForFragment(storyFragment, kind, id) {
+  if (!storyFragment || !id) return false;
+  const map = {
+    subject: 'allowedSubjects',
+    location: 'allowedLocations',
+    time: 'allowedTimes',
+    tone: 'allowedTones',
+  };
+  const key = map[kind];
+  const allowed = storyFragment[key];
+  return Array.isArray(allowed) && allowed.includes(id);
+}
+
+function resolveSelection(config, { storyFragmentId, subjectId, locationId, timeId, toneId }) {
+  const storyFragment = findOption(config.storyFragments, storyFragmentId);
   const subject = findOption(config.subjects, subjectId);
-  const action = findOption(config.actions, actionId);
   const location = findOption(config.locations, locationId);
   const time = findOption(config.times, timeId);
   const tone = findOption(config.tones, toneId);
-  if (!subject || !action || !location || !time || !tone) {
+
+  if (!storyFragment || !subject || !location || !time || !tone) {
     return null;
   }
-  return { subject, action, location, time, tone };
+
+  if (
+    !isAllowedForFragment(storyFragment, 'subject', subject.id) ||
+    !isAllowedForFragment(storyFragment, 'location', location.id) ||
+    !isAllowedForFragment(storyFragment, 'time', time.id) ||
+    !isAllowedForFragment(storyFragment, 'tone', tone.id)
+  ) {
+    return null;
+  }
+
+  return { storyFragment, subject, location, time, tone };
 }
 
 module.exports = {
   CONFIG_PATH,
   loadNewsConfig,
   findOption,
+  isAllowedForFragment,
   resolveSelection,
 };

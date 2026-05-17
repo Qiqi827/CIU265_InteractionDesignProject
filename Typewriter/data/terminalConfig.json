@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "supabaseUrl": "https://uhcgprnorihyvhrkxmpm.supabase.co",
+  "table": "frontpage_articles",
+  "sessionsTable": "sessions",
+  "useActiveSession": true,
+  "sessionId": null,
+  "terminal": {
+    "name": "CIU265_IXDProject_Web",
+    "description": "Gothenburg Posten — terminal screen (Supabase Realtime)",
+    "localUrl": "http://localhost:5500/",
+    "deployedUrl": ""
+  }
+}

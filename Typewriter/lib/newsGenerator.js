@@ -1,5 +1,13 @@
 const { loadNewsConfig, resolveSelection } = require('./configLoader');
-const { hashSeed, pickTemplate, buildTemplateVars, fillTemplate } = require('./templateEngine');
+const {
+  hashSeed,
+  pickTemplate,
+  buildTemplateVars,
+  fillTemplate,
+  appendArticleLabel,
+  composeBody,
+  getLabels,
+} = require('./templateEngine');
 
 function generateFromSelection(selectionIds) {
   const config = loadNewsConfig();
@@ -10,37 +18,42 @@ function generateFromSelection(selectionIds) {
   return generateFromResolved(config, resolved);
 }
 
-function generateFromResolved(config, { subject, action, location, time, tone }) {
-  const vars = buildTemplateVars(subject, action, location, time, tone);
-  const seed = hashSeed([subject.id, action.id, location.id, time.id, tone.id]);
-  const templates = config.generationTemplates || {};
+function generateFromResolved(config, { storyFragment, subject, location, time, tone }) {
+  const vars = buildTemplateVars(storyFragment, subject, location, time, tone);
+  const seed = hashSeed([storyFragment.id, subject.id, location.id, time.id, tone.id]);
+  const globalTemplates = config.generationTemplates || {};
+  const labels = getLabels(config);
 
-  const headline = fillTemplate(
-    pickTemplate(templates.headlineTemplates, seed),
+  const headlinePool =
+    storyFragment.headlineSeeds?.length > 0
+      ? storyFragment.headlineSeeds
+      : globalTemplates.headlineTemplates;
+
+  const headline = fillTemplate(pickTemplate(headlinePool, seed), vars);
+  const bodyCore = fillTemplate(
+    pickTemplate(globalTemplates.bodyTemplates, seed + 1),
     vars
   );
-  const body = fillTemplate(
-    pickTemplate(templates.bodyTemplates, seed + 1),
-    vars
-  );
+  const bodyRaw = composeBody(bodyCore, vars);
   const summary = fillTemplate(
-    pickTemplate(templates.editorSummaryTemplates, seed + 2),
+    pickTemplate(globalTemplates.editorSummaryTemplates, seed + 2),
     vars
   );
-
-  const label = config.articleLabel || 'Archive-inspired generated article.';
-  const editorDraftLabel =
-    config.editorDraftLabel || 'Archive-inspired generated draft, not a historical article.';
 
   return {
     headline,
-    body,
+    body: appendArticleLabel(bodyRaw, labels.articleLabel),
     summary,
-    label,
-    editorDraftLabel,
+    label: labels.articleLabel,
+    editorDraftLabel: labels.draftLabel,
+    factNotice: labels.factNotice,
+    waitingNotice: labels.waitingNotice,
+    baseFact: storyFragment.baseFact || '',
+    storyAngle: storyFragment.storyAngle || '',
+    editorNote: storyFragment.editorNote || '',
     metadata: {
+      storyFragment: storyFragment.title,
       subject: subject.title,
-      action: action.title,
       where: location.title,
       time: time.title,
       tone: tone.title,
