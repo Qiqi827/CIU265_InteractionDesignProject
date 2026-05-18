@@ -80,6 +80,10 @@
     return cleared;
   }
 
+  function emitSelectionFeedback(variable) {
+    socket.emit('editor:selection-feedback', { variable, at: Date.now() });
+  }
+
   function showFragmentNotice(message) {
     if (!fragmentNotice) return;
     if (!message) {
@@ -404,7 +408,9 @@
 
   function onFragmentChange(id) {
     const prev = selection.storyFragmentId;
+    if (prev === id) return;
     selection.storyFragmentId = id;
+    emitSelectionFeedback('storyFragment');
 
     const cleared = clearInvalidSelections();
     if (prev && prev !== id && cleared.length) {
@@ -441,7 +447,9 @@
       selection.subjectId,
       allowedSubjects,
       (id) => {
+        if (selection.subjectId === id || !isAllowed('subject', id)) return;
         selection.subjectId = id;
+        emitSelectionFeedback('subject');
         rerenderAll();
       }
     );
@@ -452,18 +460,24 @@
       selection.locationId,
       allowedLocations,
       (id) => {
+        if (selection.locationId === id || !isAllowed('location', id)) return;
         selection.locationId = id;
+        emitSelectionFeedback('location');
         rerenderAll();
       }
     );
 
     renderTimeBar(config.times, selection.timeId, allowedTimes, (id) => {
+      if (selection.timeId === id || !isAllowed('time', id)) return;
       selection.timeId = id;
+      emitSelectionFeedback('time');
       rerenderAll();
     });
 
     renderToneButtons(config.tones, selection.toneId, allowedTones, (id) => {
+      if (selection.toneId === id || !isAllowed('tone', id)) return;
       selection.toneId = id;
+      emitSelectionFeedback('tone');
       rerenderAll();
     });
 

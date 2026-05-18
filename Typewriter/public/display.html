@@ -31,6 +31,10 @@
         </section>
 
         <section class="waiting-scene" aria-label="Draft waiting">
+          <div class="draft-received-stamp" id="draft-received-stamp" hidden aria-hidden="true">
+            <span class="draft-received-stamp__title">DRAFT RECEIVED</span>
+            <span class="draft-received-stamp__sub">Received by newsroom</span>
+          </div>
           <p class="status-pill">Draft on desk</p>
           <h2>Draft received. Waiting for typewriter confirmation.</h2>
           <p id="waiting-summary">
@@ -73,6 +77,7 @@
   </div>
 
   <div class="display-controls" title="Staff controls (testing)">
+    <button type="button" id="btn-enable-sound" class="btn-enable-sound">Enable exhibition sound</button>
     <span class="connection-dot" id="connection-dot" aria-hidden="true"></span>
     <button type="button" id="btn-publish" title="Simulate typewriter PUBLISH">Publish</button>
     <button type="button" id="btn-reset" title="Return to idle">Reset</button>

@@ -167,6 +167,10 @@ io.on('connection', (socket) => {
     io.emit('room:update', state.getSnapshot());
     console.log('[room] reset to idle');
   });
+
+  socket.on('editor:selection-feedback', (payload) => {
+    io.emit('editor:selection-feedback', payload);
+  });
 });
 
 function startSerialListener() {

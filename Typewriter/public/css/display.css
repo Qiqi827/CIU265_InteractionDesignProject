@@ -118,6 +118,7 @@
 }
 
 .waiting-scene {
+  position: relative;
   text-align: center;
   padding: 4rem 1.5rem;
 }
@@ -260,4 +261,95 @@
 
 .connection-dot.online {
   background: #4a9;
+}
+
+.btn-enable-sound {
+  border-color: #8a6d4a !important;
+  background: rgba(90, 60, 30, 0.85) !important;
+}
+
+.btn-enable-sound.is-enabled {
+  opacity: 0.5;
+  font-size: 0.65rem;
+  padding: 0.35rem 0.5rem;
+  cursor: default;
+}
+
+.draft-received-stamp {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%) scale(0.6) rotate(-8deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  padding: 0.65rem 1.25rem;
+  border: 4px double var(--accent);
+  color: var(--accent);
+  background: rgba(255, 252, 245, 0.95);
+  text-align: center;
+  transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.draft-received-stamp.is-active {
+  opacity: 1;
+  transform: translateX(-50%) scale(1) rotate(-4deg);
+}
+
+.draft-received-stamp__title {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.draft-received-stamp__sub {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.display-paper.is-draft-arrival .waiting-scene {
+  animation: draft-slide-in 0.55s ease-out;
+}
+
+.display-paper.is-publishing .article-scene .headline {
+  animation: headline-type-in 1.8s ease-out;
+}
+
+.display-paper.is-publishing .article-scene .body-text {
+  animation: body-fade-in 2s ease-out 0.35s both;
+}
+
+@keyframes draft-slide-in {
+  from {
+    opacity: 0.4;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes headline-type-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.2em;
+  }
+  to {
+    opacity: 1;
+    letter-spacing: normal;
+  }
+}
+
+@keyframes body-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
