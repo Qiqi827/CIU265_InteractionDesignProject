@@ -1,27 +1,24 @@
-// Capture page: webcam + 9-slot voting wall + Supabase Realtime broadcast.
+// Capture client: webcam → 9-slot voting wall, synced through Socket.IO.
 //
-// Slot 0 is BEST (fixed). It always shows the photo with the highest vote
-// count (ties broken by most-recent createdAt, and only if at least one
-// vote exists). Slots 1-8 are FIFO showing the most recent non-BEST photos.
-// The wider photoLibrary (capped at 100) backs vote bookkeeping and is
-// kept in sync with index.html via broadcast events.
+// Slot 0 is BEST (fixed) - the photo with the most votes (>=1) takes it,
+// ties broken by most-recent createdAt. Slots 1-8 hold the most recent
+// non-BEST photos in FIFO order.
+//
+// The Node + Express + Socket.IO server (server.js at repo root) owns the
+// canonical photo library and vote counts; we mirror its state locally and
+// emit `photo:add` / `photo:vote` for changes. Reload-safe: on reconnect
+// the server sends `photo:state` with the current snapshot.
 
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase-config.js';
+import { io } from 'https://cdn.socket.io/4.7.5/socket.io.esm.min.js';
 
 // ---------- Config ----------
 
-const CHANNEL_NAME = 'citizen-lens-photos';
-const EVENT_NEW = 'new-photo';
-const EVENT_VOTE = 'vote';
-
 const BROADCAST_MAX_DIM = 600;
 const BROADCAST_QUALITY = 0.7;
-const LOCAL_QUALITY = 0.92;
 
 const VOTE_COOLDOWN_MS = 5000;
 const MAX_LIBRARY = 100;
-const FIFO_SLOTS = 8;     // positions 1..8
+const FIFO_SLOTS = 8;
 
 // ---------- DOM ----------
 
@@ -39,35 +36,51 @@ const photoLibrary = [];                  // [{id, dataUrl, votes, createdAt}]
 const voteCooldownUntil = new Map();      // photoId -> timestamp
 let toastTimerId = null;
 
-let supabase = null;
-let channel = null;
-let channelReady = false;
+// ---------- Socket.IO ----------
 
-// ---------- Supabase ----------
+// Connect to the same origin that served this page.
+const socket = io();
 
-function isSupabaseConfigured() {
-    return (
-        SUPABASE_URL &&
-        SUPABASE_ANON_KEY &&
-        !SUPABASE_URL.includes('PASTE_') &&
-        !SUPABASE_ANON_KEY.includes('PASTE_')
-    );
-}
+socket.on('connect', () => {
+    console.log('[citizen-lens] socket connected:', socket.id);
+});
 
-function setupRealtime() {
-    if (!isSupabaseConfigured()) {
-        console.warn('[citizen-lens] supabase-config.js not filled in; broadcast disabled.');
-        return;
+socket.on('disconnect', (reason) => {
+    console.log('[citizen-lens] socket disconnected:', reason);
+});
+
+socket.on('connect_error', (err) => {
+    console.error('[citizen-lens] socket connect_error:', err.message);
+    showToast('Server unreachable', true);
+});
+
+// Server sends the full snapshot on connect (and on reset).
+socket.on('photo:state', ({ library }) => {
+    photoLibrary.length = 0;
+    if (Array.isArray(library)) library.forEach((p) => photoLibrary.push(p));
+    // Clear any cooldowns whose photos no longer exist.
+    for (const id of [...voteCooldownUntil.keys()]) {
+        if (!photoLibrary.some((p) => p.id === id)) voteCooldownUntil.delete(id);
     }
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    channel = supabase.channel(CHANNEL_NAME, {
-        config: { broadcast: { self: false, ack: false } },
-    });
-    channel.subscribe((status) => {
-        channelReady = (status === 'SUBSCRIBED');
-        if (channelReady) console.log('[citizen-lens] connected.');
-    });
-}
+    renderWall();
+});
+
+// Another client added a photo.
+socket.on('photo:added', (photo) => {
+    if (!photo || !photo.id) return;
+    if (photoLibrary.some((p) => p.id === photo.id)) return;
+    photoLibrary.push(photo);
+    while (photoLibrary.length > MAX_LIBRARY) photoLibrary.shift();
+    renderWall();
+});
+
+// Another client voted.
+socket.on('photo:voted', ({ id, votes }) => {
+    const photo = photoLibrary.find((p) => p.id === id);
+    if (!photo) return;
+    photo.votes = votes; // trust the server's count
+    renderWall();
+});
 
 // ---------- Camera ----------
 
@@ -145,17 +158,6 @@ function downscaleDataUrl(srcDataUrl, maxDim, quality) {
 
 // ---------- Library logic ----------
 
-function addPhotoLocal(photo) {
-    if (photoLibrary.some((p) => p.id === photo.id)) return;
-    photoLibrary.push(photo);
-    while (photoLibrary.length > MAX_LIBRARY) photoLibrary.shift();
-}
-
-function applyVoteLocal(photoId) {
-    const photo = photoLibrary.find((p) => p.id === photoId);
-    if (photo) photo.votes += 1;
-}
-
 function getBestPhoto() {
     if (photoLibrary.length === 0) return null;
     const sorted = [...photoLibrary].sort((a, b) => {
@@ -213,7 +215,6 @@ function renderWall() {
     }
 }
 
-// Tick button countdown labels while any cooldown is active.
 let cooldownTickTimerId = null;
 function ensureCooldownTicker() {
     if (cooldownTickTimerId) return;
@@ -247,81 +248,68 @@ function handleWallClick(event) {
     const end = voteCooldownUntil.get(photoId);
     if (end && end > Date.now()) return;
 
-    applyVoteLocal(photoId);
+    // Optimistic local update so the UI feels instant.
+    const photo = photoLibrary.find((p) => p.id === photoId);
+    if (photo) photo.votes += 1;
     voteCooldownUntil.set(photoId, Date.now() + VOTE_COOLDOWN_MS);
-    broadcastVote(photoId);
     renderWall();
     ensureCooldownTicker();
+
+    // Tell the server. Server will fan out `photo:voted` to other clients.
+    socket.emit('photo:vote', photoId, (response) => {
+        if (response && response.ok === false) {
+            console.warn('[citizen-lens] vote rejected:', response.error);
+        } else if (response && typeof response.votes === 'number') {
+            // Reconcile with the server's authoritative count.
+            const p = photoLibrary.find((x) => x.id === photoId);
+            if (p) p.votes = response.votes;
+            renderWall();
+        }
+    });
 }
 
 photoWall.addEventListener('click', handleWallClick);
 
-// ---------- Broadcasts ----------
-
-async function broadcastPhoto(photo) {
-    if (!channelReady) {
-        showToast('Saved locally (newspaper offline)', true);
-        return;
-    }
-    try {
-        const compressed = await downscaleDataUrl(
-            photo.dataUrl, BROADCAST_MAX_DIM, BROADCAST_QUALITY,
-        );
-        await channel.send({
-            type: 'broadcast',
-            event: EVENT_NEW,
-            payload: {
-                id: photo.id,
-                dataUrl: compressed,
-                votes: photo.votes,
-                createdAt: photo.createdAt,
-            },
-        });
-        console.log('[citizen-lens] photo sent', photo.id);
-        showToast('Sent to newspaper');
-    } catch (err) {
-        console.error('[citizen-lens] photo broadcast failed', err);
-        showToast('Sync failed', true);
-    }
-}
-
-async function broadcastVote(photoId) {
-    if (!channelReady) return;
-    try {
-        await channel.send({
-            type: 'broadcast',
-            event: EVENT_VOTE,
-            payload: { id: photoId, at: new Date().toISOString() },
-        });
-    } catch (err) {
-        console.error('[citizen-lens] vote broadcast failed', err);
-    }
-}
-
-// ---------- Handlers ----------
+// ---------- Capture handler ----------
 
 async function takePhoto() {
     flashShutter();
-    const dataUrl = captureFrameDataUrl(LOCAL_QUALITY);
-    if (!dataUrl) {
+    const rawDataUrl = captureFrameDataUrl(0.92);
+    if (!rawDataUrl) {
         showToast('Camera not ready', true);
         return;
     }
+
+    const dataUrl = await downscaleDataUrl(rawDataUrl, BROADCAST_MAX_DIM, BROADCAST_QUALITY);
     const photo = {
         id: makeId(),
         dataUrl,
         votes: 0,
         createdAt: new Date().toISOString(),
     };
-    addPhotoLocal(photo);
-    renderWall();
-    broadcastPhoto(photo);
-}
 
-// ---------- Init ----------
+    // Optimistic local add.
+    photoLibrary.push(photo);
+    while (photoLibrary.length > MAX_LIBRARY) photoLibrary.shift();
+    renderWall();
+
+    if (socket.connected) {
+        socket.emit('photo:add', photo, (response) => {
+            if (response && response.ok === false) {
+                console.warn('[citizen-lens] photo rejected:', response.error);
+                showToast('Sync failed', true);
+            } else {
+                showToast('Sent to newspaper');
+            }
+        });
+    } else {
+        showToast('Saved locally (server offline)', true);
+    }
+}
 
 snapBtn.addEventListener('click', takePhoto);
 
-setupRealtime();
+// ---------- Init ----------
+
 setupCamera();
 renderWall();

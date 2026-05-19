@@ -73,7 +73,7 @@ body {
 }
 
 #snap-btn {
-    margin-top: 24px;
+    margin-top: 20px;
     padding: 15px 40px;
     background-color: var(--accent-red);
     color: white;
@@ -89,14 +89,14 @@ body {
 }
 
 /* ----------------------------------------------------------
-   Right side: voting wall with title + 3x3 photo cells (9 total)
+   Right side: voting wall, title + 3x3 photo cells
    ---------------------------------------------------------- */
 
 .wall-section {
     flex: 1.6;
     background: var(--wall-bg);
     border-radius: 12px;
-    padding: 22px 22px 28px;
+    padding: 26px 22px 26px;
     display: flex;
     flex-direction: column;
     box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
@@ -105,7 +105,7 @@ body {
 }
 
 .wall-title {
-    margin: 0 0 14px;
+    margin: 0 0 16px;
     text-align: center;
     font-family: 'Old Standard TT', Georgia, serif;
     font-size: clamp(15px, 1.6vw, 22px);
@@ -125,46 +125,39 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-rows: repeat(3, minmax(0, 1fr));
     gap: clamp(10px, 1.1vw, 18px);
-    /* Reserve a little headroom so the BEST badge can sit above the
-       first cell without overlapping the wall title. */
-    margin-top: 16px;
-    overflow: visible;
 }
 
 .photo-cell {
+    position: relative;
     min-width: 0;
     min-height: 0;
-    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     gap: 5px;
     transition: transform 0.3s ease;
 }
 
-/* Slight polaroid tilt for variety; BEST stays upright. */
 .photo-cell:nth-child(even) .photo-slot { transform: rotate(1.5deg); }
 .photo-cell:nth-child(odd)  .photo-slot { transform: rotate(-1.5deg); }
 .photo-cell.best-cell .photo-slot { transform: rotate(0); }
 
-/* BEST badge: only present on the first cell. Positioned absolutely above
-   the cell so it does not consume layout space - the other 8 cells line
-   up perfectly without needing any matching spacer. */
 .best-label {
     position: absolute;
+    top: -4px;
     left: 50%;
-    bottom: 100%;
-    transform: translate(-50%, -4px);
-    padding: 3px 12px;
-    border-radius: 4px;
+    transform: translateX(-50%);
+    padding: 3px 14px;
     background: var(--accent-red);
     color: white;
-    font-size: clamp(10px, 0.75vw, 12px);
+    font-size: clamp(9px, 0.72vw, 11px);
     font-weight: bold;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
+    border-radius: 4px;
+    z-index: 3;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
     white-space: nowrap;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
-    z-index: 2;
+    pointer-events: none;
 }
 
 .photo-slot {
@@ -191,7 +184,6 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* Old-photo filter */
     filter: sepia(0.7) hue-rotate(-15deg) saturate(1.2) contrast(0.95);
     animation: fadeInFaded 1s ease-in;
 }
@@ -206,7 +198,6 @@ body {
     }
 }
 
-/* Vote row below each photo */
 .vote-row {
     display: flex;
     align-items: center;
