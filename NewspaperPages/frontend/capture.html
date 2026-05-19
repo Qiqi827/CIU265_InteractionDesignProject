@@ -14,7 +14,7 @@
             </div>
             <button id="snap-btn">CAPTURE</button>
             <button id="reset-btn">CLEAR ALL PHOTOS</button>
-            <p style="margin-top:10px;"><a href="newspaper.html" target="_blank">Open newspaper view to see sync →</a></p>
+            <p style="margin-top:10px;"><a href="index.html" target="_blank">Open newspaper view to see sync →</a></p>
         </section>
 
         <section class="wall-section">
@@ -30,7 +30,13 @@
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <canvas id="canvas" style="display:none;"></canvas>
-    
+
+    <!-- Existing capture logic, untouched -->
     <script type="module" src="script.js"></script>
+
+    <!-- New: observes .photo-wall and mirrors every captured photo to the Citizen Lens
+         panel on index.html via Supabase Realtime broadcast. Does NOT modify capture
+         behaviour - it only reads images that script.js places into .photo-slot. -->
+    <script type="module" src="citizen-lens-sync.js"></script>
 </body>
 </html>
