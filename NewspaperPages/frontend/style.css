@@ -2,6 +2,7 @@
     --bg-color: #f4f4f2;
     --camera-bg: #222;
     --accent-red: #e63946;
+    --wall-bg: #e5e5e5;
 }
 
 body {
@@ -17,11 +18,14 @@ body {
 .container {
     display: flex;
     width: 90vw;
-    height: 80vh;
+    height: 90vh;
     gap: 40px;
 }
 
-/* Left viewfinder */
+/* ----------------------------------------------------------
+   Left side: camera viewfinder
+   ---------------------------------------------------------- */
+
 .camera-section {
     flex: 1;
     display: flex;
@@ -47,7 +51,6 @@ body {
     object-fit: cover;
 }
 
-/* Shutter flash effect */
 .shutter-overlay {
     position: absolute;
     top: 0;
@@ -70,7 +73,7 @@ body {
 }
 
 #snap-btn {
-    margin-top: 20px;
+    margin-top: 24px;
     padding: 15px 40px;
     background-color: var(--accent-red);
     color: white;
@@ -85,59 +88,172 @@ body {
     transform: scale(0.9);
 }
 
-#reset-btn {
-    margin-top: 10px;
-    padding: 10px 22px;
-    background-color: #333;
+/* ----------------------------------------------------------
+   Right side: voting wall with title + 3x3 photo cells (9 total)
+   ---------------------------------------------------------- */
+
+.wall-section {
+    flex: 1.6;
+    background: var(--wall-bg);
+    border-radius: 12px;
+    padding: 22px 22px 28px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+    min-height: 0;
+    min-width: 0;
+}
+
+.wall-title {
+    margin: 0 0 14px;
+    text-align: center;
+    font-family: 'Old Standard TT', Georgia, serif;
+    font-size: clamp(15px, 1.6vw, 22px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #1f1f1f;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--accent-red);
+    padding-bottom: 8px;
+}
+
+.photo-wall {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 1.1vw, 18px);
+    /* Reserve a little headroom so the BEST badge can sit above the
+       first cell without overlapping the wall title. */
+    margin-top: 16px;
+    overflow: visible;
+}
+
+.photo-cell {
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    transition: transform 0.3s ease;
+}
+
+/* Slight polaroid tilt for variety; BEST stays upright. */
+.photo-cell:nth-child(even) .photo-slot { transform: rotate(1.5deg); }
+.photo-cell:nth-child(odd)  .photo-slot { transform: rotate(-1.5deg); }
+.photo-cell.best-cell .photo-slot { transform: rotate(0); }
+
+/* BEST badge: only present on the first cell. Positioned absolutely above
+   the cell so it does not consume layout space - the other 8 cells line
+   up perfectly without needing any matching spacer. */
+.best-label {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    transform: translate(-50%, -4px);
+    padding: 3px 12px;
+    border-radius: 4px;
+    background: var(--accent-red);
+    color: white;
+    font-size: clamp(10px, 0.75vw, 12px);
+    font-weight: bold;
+    letter-spacing: 0.18em;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    z-index: 2;
+}
+
+.photo-slot {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    overflow: hidden;
+    position: relative;
+    border: 5px solid white;
+    border-bottom: 16px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 0.3s ease;
+}
+
+.photo-cell.best-cell .photo-slot {
+    box-shadow: 0 6px 18px rgba(230, 57, 70, 0.35);
+    border-color: #fffdf5;
+}
+
+.photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Old-photo filter */
+    filter: sepia(0.7) hue-rotate(-15deg) saturate(1.2) contrast(0.95);
+    animation: fadeInFaded 1s ease-in;
+}
+
+@keyframes fadeInFaded {
+    0% {
+        opacity: 0;
+        filter: sepia(0.7) hue-rotate(-15deg) saturate(1.2) contrast(0.95) brightness(1.5) blur(2px);
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Vote row below each photo */
+.vote-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 26px;
+}
+
+.vote-btn {
+    padding: 4px 14px;
+    background: var(--accent-red);
     color: white;
     border: none;
     border-radius: 999px;
     font-weight: bold;
+    font-size: clamp(10px, 0.75vw, 12px);
+    letter-spacing: 0.05em;
     cursor: pointer;
+    min-width: 58px;
+    transition: transform 0.1s ease, background 0.2s ease, opacity 0.2s ease;
 }
 
-#reset-btn:active {
-    transform: scale(0.97);
+.vote-btn:hover:not(:disabled) {
+    background: #c12d3a;
 }
 
-/* Right photo wall */
-.wall-section {
-    flex: 1.5;
-    background: #e5e5e5; /* Simulated wall texture */
-    border-radius: 12px;
-    padding: 30px;
-    display: flex;
-    align-items: center;
-    box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+.vote-btn:active:not(:disabled) {
+    transform: scale(0.93);
 }
 
-.photo-wall {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 20px;
-    width: 100%;
-    height: 100%;
+.vote-btn:disabled {
+    background: #999;
+    cursor: not-allowed;
+    opacity: 0.65;
 }
 
-.photo-slot {
-    background: white;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    position: relative;
-    border: 8px solid white;
-    border-bottom: 24px solid white; /* Polaroid-style bottom edge */
-    transition: all 0.5s ease;
+.vote-count {
+    font-size: clamp(11px, 0.8vw, 13px);
+    font-weight: bold;
+    color: #333;
+    min-width: 1.6em;
+    text-align: center;
 }
 
-/* Add slight random rotation for each slot */
-.photo-slot:nth-child(odd) { transform: rotate(-2deg); }
-.photo-slot:nth-child(even) { transform: rotate(2deg); }
-
-/* ========================================================= */
+/* ----------------------------------------------------------
+   Toast
+   ---------------------------------------------------------- */
 
 .toast {
     position: fixed;
@@ -159,31 +275,3 @@ body {
     opacity: 1;
     transform: translateY(0);
 }
-/* Updated section: old-photo filter and animation          */
-/* ========================================================= */
-.photo-slot img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    
-    /* 1. Always apply old-photo filter */
-    /* Sepia with a slight hue shift and reduced saturation */
-    filter: sepia(0.7) hue-rotate(-15deg) saturate(1.2) contrast(0.95);
-    
-    /* 2. Keep animation simple and focused on fade-in */
-    animation: fadeInFaded 1s ease-in;
-}
-
-/* Dedicated fade-in animation; base filter is always active */
-@keyframes fadeInFaded {
-    0% { 
-        opacity: 0; 
-        /* Slight bloom and blur to mimic development */
-        filter: sepia(0.7) hue-rotate(-15deg) saturate(1.2) contrast(0.95) brightness(1.5) blur(2px);
-    }
-    100% { 
-        opacity: 1; 
-        /* End at the base filter defined on img */
-    }
-}
-/* ========================================================= */

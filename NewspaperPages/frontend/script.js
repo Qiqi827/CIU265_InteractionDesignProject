@@ -1,14 +1,10 @@
-// Capture page logic
+// Capture page: webcam + 9-slot voting wall + Supabase Realtime broadcast.
 //
-// This file replaces the original /api/photos-based version. Photos are now:
-//   1. Captured locally from the webcam (unchanged)
-//   2. Rendered into the local 6-slot photo-wall as a FIFO queue
-//   3. Broadcast directly to index.html (Citizen Lens panel) through
-//      Supabase Realtime, matching the architecture described in README.md
-//
-// There is no longer any HTTP backend involved on the capture side - no
-// /api/photos POST, no /api/photos/latest polling, no /api/reset. The
-// browser talks straight to Supabase over a WebSocket.
+// Slot 0 is BEST (fixed). It always shows the photo with the highest vote
+// count (ties broken by most-recent createdAt, and only if at least one
+// vote exists). Slots 1-8 are FIFO showing the most recent non-BEST photos.
+// The wider photoLibrary (capped at 100) backs vote bookkeeping and is
+// kept in sync with index.html via broadcast events.
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase-config.js';
@@ -17,33 +13,37 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from './supabase-config.js';
 
 const CHANNEL_NAME = 'citizen-lens-photos';
 const EVENT_NEW = 'new-photo';
-const EVENT_RESET = 'reset-photos';
-const BROADCAST_MAX_DIM = 600;     // Down-scale long edge before broadcast
-const BROADCAST_QUALITY = 0.7;     // JPEG quality for broadcast payload
-const LOCAL_QUALITY = 0.92;        // Higher quality for local wall
+const EVENT_VOTE = 'vote';
+
+const BROADCAST_MAX_DIM = 600;
+const BROADCAST_QUALITY = 0.7;
+const LOCAL_QUALITY = 0.92;
+
+const VOTE_COOLDOWN_MS = 5000;
+const MAX_LIBRARY = 100;
+const FIFO_SLOTS = 8;     // positions 1..8
 
 // ---------- DOM ----------
 
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const snapBtn = document.getElementById('snap-btn');
-const resetBtn = document.getElementById('reset-btn');
 const toast = document.getElementById('toast');
 const shutter = document.getElementById('shutter-overlay');
-const slots = document.querySelectorAll('.photo-slot');
-
-const MAX_LOCAL_PHOTOS = slots.length; // 6 polaroid slots on this page
+const photoWall = document.getElementById('photo-wall');
+const cells = Array.from(photoWall.querySelectorAll('.photo-cell'));
 
 // ---------- State ----------
 
-const localPhotos = []; // FIFO of {id, dataUrl}
+const photoLibrary = [];                  // [{id, dataUrl, votes, createdAt}]
+const voteCooldownUntil = new Map();      // photoId -> timestamp
 let toastTimerId = null;
 
 let supabase = null;
 let channel = null;
 let channelReady = false;
 
-// ---------- Supabase Realtime ----------
+// ---------- Supabase ----------
 
 function isSupabaseConfigured() {
     return (
@@ -61,13 +61,11 @@ function setupRealtime() {
     }
     supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     channel = supabase.channel(CHANNEL_NAME, {
-        config: { broadcast: { self: false, ack: false } }
+        config: { broadcast: { self: false, ack: false } },
     });
     channel.subscribe((status) => {
         channelReady = (status === 'SUBSCRIBED');
-        if (channelReady) {
-            console.log('[citizen-lens] connected.');
-        }
+        if (channelReady) console.log('[citizen-lens] connected.');
     });
 }
 
@@ -94,23 +92,18 @@ function showToast(message, isError = false) {
     toast.style.background = isError ? '#b53a3a' : '#1f8f4a';
     toast.classList.add('show');
     if (toastTimerId) clearTimeout(toastTimerId);
-    toastTimerId = setTimeout(() => {
-        toast.classList.remove('show');
-    }, 2200);
+    toastTimerId = setTimeout(() => toast.classList.remove('show'), 2200);
 }
 
 function flashShutter() {
     if (!shutter) return;
     shutter.classList.remove('flash-animation');
-    // Force reflow so the animation restarts even on rapid clicks.
     void shutter.offsetWidth;
     shutter.classList.add('flash-animation');
 }
 
 function makeId() {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-        return crypto.randomUUID();
-    }
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
     return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -150,26 +143,120 @@ function downscaleDataUrl(srcDataUrl, maxDim, quality) {
     });
 }
 
-// ---------- Local photo wall ----------
+// ---------- Library logic ----------
 
-function renderLocalWall() {
-    slots.forEach((slot, i) => {
-        const photo = localPhotos[i];
-        if (photo) {
-            // Avoid re-creating the <img> if it's the same photo, so the
-            // CSS fade-in animation only fires for genuinely new captures.
-            const existing = slot.querySelector('img');
-            if (!existing || existing.dataset.photoId !== photo.id) {
-                slot.innerHTML =
-                    `<img src="${photo.dataUrl}" data-photo-id="${photo.id}">`;
-            }
-        } else {
-            slot.innerHTML = '';
-        }
-    });
+function addPhotoLocal(photo) {
+    if (photoLibrary.some((p) => p.id === photo.id)) return;
+    photoLibrary.push(photo);
+    while (photoLibrary.length > MAX_LIBRARY) photoLibrary.shift();
 }
 
-// ---------- Broadcast ----------
+function applyVoteLocal(photoId) {
+    const photo = photoLibrary.find((p) => p.id === photoId);
+    if (photo) photo.votes += 1;
+}
+
+function getBestPhoto() {
+    if (photoLibrary.length === 0) return null;
+    const sorted = [...photoLibrary].sort((a, b) => {
+        if (b.votes !== a.votes) return b.votes - a.votes;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    if (sorted[0].votes === 0) return null;
+    return sorted[0];
+}
+
+function getFifoPhotos() {
+    const best = getBestPhoto();
+    return photoLibrary
+        .filter((p) => !best || p.id !== best.id)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, FIFO_SLOTS);
+}
+
+// ---------- Rendering ----------
+
+function renderCell(cell, photo) {
+    const slot = cell.querySelector('.photo-slot');
+    const btn = cell.querySelector('.vote-btn');
+    const countEl = cell.querySelector('.vote-count');
+
+    if (photo) {
+        cell.dataset.photoId = photo.id;
+        const existing = slot.querySelector('img');
+        if (!existing || existing.dataset.photoId !== photo.id) {
+            slot.innerHTML = `<img src="${photo.dataUrl}" data-photo-id="${photo.id}">`;
+        }
+        countEl.textContent = String(photo.votes);
+
+        const cooldownEnd = voteCooldownUntil.get(photo.id);
+        const onCooldown = cooldownEnd && cooldownEnd > Date.now();
+        btn.disabled = !!onCooldown;
+        btn.textContent = onCooldown
+            ? `${Math.ceil((cooldownEnd - Date.now()) / 1000)}s`
+            : 'VOTE';
+    } else {
+        delete cell.dataset.photoId;
+        slot.innerHTML = '';
+        countEl.textContent = '0';
+        btn.disabled = true;
+        btn.textContent = 'VOTE';
+    }
+}
+
+function renderWall() {
+    const best = getBestPhoto();
+    const fifo = getFifoPhotos();
+    renderCell(cells[0], best);
+    for (let i = 0; i < FIFO_SLOTS; i++) {
+        renderCell(cells[i + 1], fifo[i]);
+    }
+}
+
+// Tick button countdown labels while any cooldown is active.
+let cooldownTickTimerId = null;
+function ensureCooldownTicker() {
+    if (cooldownTickTimerId) return;
+    cooldownTickTimerId = setInterval(() => {
+        const now = Date.now();
+        let stillActive = false;
+        for (const [id, end] of voteCooldownUntil) {
+            if (end > now) {
+                stillActive = true;
+            } else {
+                voteCooldownUntil.delete(id);
+            }
+        }
+        renderWall();
+        if (!stillActive) {
+            clearInterval(cooldownTickTimerId);
+            cooldownTickTimerId = null;
+        }
+    }, 250);
+}
+
+// ---------- Vote handling ----------
+
+function handleWallClick(event) {
+    const btn = event.target.closest('.vote-btn');
+    if (!btn || btn.disabled) return;
+    const cell = btn.closest('.photo-cell');
+    const photoId = cell?.dataset.photoId;
+    if (!photoId) return;
+
+    const end = voteCooldownUntil.get(photoId);
+    if (end && end > Date.now()) return;
+
+    applyVoteLocal(photoId);
+    voteCooldownUntil.set(photoId, Date.now() + VOTE_COOLDOWN_MS);
+    broadcastVote(photoId);
+    renderWall();
+    ensureCooldownTicker();
+}
+
+photoWall.addEventListener('click', handleWallClick);
+
+// ---------- Broadcasts ----------
 
 async function broadcastPhoto(photo) {
     if (!channelReady) {
@@ -178,9 +265,7 @@ async function broadcastPhoto(photo) {
     }
     try {
         const compressed = await downscaleDataUrl(
-            photo.dataUrl,
-            BROADCAST_MAX_DIM,
-            BROADCAST_QUALITY,
+            photo.dataUrl, BROADCAST_MAX_DIM, BROADCAST_QUALITY,
         );
         await channel.send({
             type: 'broadcast',
@@ -188,29 +273,28 @@ async function broadcastPhoto(photo) {
             payload: {
                 id: photo.id,
                 dataUrl: compressed,
-                createdAt: new Date().toISOString(),
+                votes: photo.votes,
+                createdAt: photo.createdAt,
             },
         });
-        console.log('[citizen-lens] sent', photo.id);
+        console.log('[citizen-lens] photo sent', photo.id);
         showToast('Sent to newspaper');
     } catch (err) {
-        console.error('[citizen-lens] broadcast failed', err);
+        console.error('[citizen-lens] photo broadcast failed', err);
         showToast('Sync failed', true);
     }
 }
 
-async function broadcastReset() {
-    if (!channelReady) return false;
+async function broadcastVote(photoId) {
+    if (!channelReady) return;
     try {
         await channel.send({
             type: 'broadcast',
-            event: EVENT_RESET,
-            payload: { at: new Date().toISOString() },
+            event: EVENT_VOTE,
+            payload: { id: photoId, at: new Date().toISOString() },
         });
-        return true;
     } catch (err) {
-        console.error('[citizen-lens] reset broadcast failed', err);
-        return false;
+        console.error('[citizen-lens] vote broadcast failed', err);
     }
 }
 
@@ -218,41 +302,26 @@ async function broadcastReset() {
 
 async function takePhoto() {
     flashShutter();
-
     const dataUrl = captureFrameDataUrl(LOCAL_QUALITY);
     if (!dataUrl) {
         showToast('Camera not ready', true);
         return;
     }
-
-    const photo = { id: makeId(), dataUrl };
-
-    // Local wall FIFO - newest goes to the end.
-    if (localPhotos.length >= MAX_LOCAL_PHOTOS) {
-        localPhotos.shift();
-    }
-    localPhotos.push(photo);
-    renderLocalWall();
-
-    // Independently broadcast to the newspaper.
+    const photo = {
+        id: makeId(),
+        dataUrl,
+        votes: 0,
+        createdAt: new Date().toISOString(),
+    };
+    addPhotoLocal(photo);
+    renderWall();
     broadcastPhoto(photo);
-}
-
-async function resetAllPhotos() {
-    localPhotos.length = 0;
-    renderLocalWall();
-
-    if (channelReady) {
-        const ok = await broadcastReset();
-        showToast(ok ? 'All photos were removed' : 'Cleared locally (sync error)', !ok);
-    } else {
-        showToast('Cleared locally', true);
-    }
 }
 
 // ---------- Init ----------
 
 snapBtn.addEventListener('click', takePhoto);
-resetBtn.addEventListener('click', resetAllPhotos);
+
 setupRealtime();
 setupCamera();
+renderWall();
