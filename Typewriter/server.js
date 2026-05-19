@@ -10,7 +10,25 @@ const { generateFromSelection } = require('./lib/newsGenerator');
 const { getPublicTerminalInfo, publishToTerminal } = require('./lib/terminalPublisher');
 
 const PORT = Number(process.env.PORT) || 3000;
-const SERIAL_PATH = process.env.SERIAL_PORT || '';
+const SERIAL_PORT = process.env.SERIAL_PORT || 'COM8';
+const BAUD_RATE = Number(process.env.SERIAL_BAUD_RATE) || 9600;
+
+/** @type {import('serialport').SerialPort | null} */
+let arduinoPort = null;
+
+function sendArduinoCommand(command) {
+  if (!arduinoPort || !arduinoPort.isOpen) {
+    console.log('Arduino port not open, cannot send:', command);
+    return;
+  }
+  arduinoPort.write(`${command}\n`, (err) => {
+    if (err) {
+      console.error('[serial] write failed:', err.message);
+      return;
+    }
+    console.log('[serial] sent to Arduino:', command);
+  });
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -52,7 +70,7 @@ app.get('/api/terminal', (_req, res) => {
 async function publishLatestDraft(source) {
   const snapshot = state.getSnapshot();
   if (!snapshot.draft) {
-    console.log(`[publish] ignored (${source}): no draft waiting`);
+    console.log('No draft available to publish.');
     return { ok: false, reason: 'no_draft' };
   }
 
@@ -96,6 +114,8 @@ async function publishLatestDraft(source) {
     `[publish] local display updated via ${source}` +
       (terminalPublish?.ok ? '; terminal wall notified' : `; terminal: ${terminalPublish?.reason || 'skipped'}`)
   );
+
+  sendArduinoCommand('LIGHT_OFF');
 
   return { ok: true, article, terminalPublish };
 }
@@ -150,6 +170,7 @@ io.on('connection', (socket) => {
     state.setDraft(draft);
     io.emit('room:update', state.getSnapshot());
     console.log('[draft] received from editor → local /display waiting');
+    sendArduinoCommand('LIGHT_ON');
     if (typeof ack === 'function') ack({ ok: true });
   });
 
@@ -174,27 +195,26 @@ io.on('connection', (socket) => {
 });
 
 function startSerialListener() {
-  if (!SERIAL_PATH) {
-    console.log('[serial] SERIAL_PORT not set — Arduino listener disabled');
-    console.log('[serial] Use display fallback button or set SERIAL_PORT=COM3 (Windows) / /dev/ttyUSB0 (Linux)');
-    return;
-  }
-
   let SerialPort;
   let ReadlineParser;
   try {
     ({ SerialPort } = require('serialport'));
     ({ ReadlineParser } = require('@serialport/parser-readline'));
   } catch (err) {
-    console.warn('[serial] packages unavailable:', err.message);
+    console.warn('[serial] serialport not available:', err.message);
+    console.warn('[serial] Run: npm install serialport');
     return;
   }
 
-  const port = new SerialPort({ path: SERIAL_PATH, baudRate: 9600 });
+  console.log(`[serial] opening ${SERIAL_PORT} @ ${BAUD_RATE} baud`);
+
+  const port = new SerialPort({ path: SERIAL_PORT, baudRate: BAUD_RATE });
+  arduinoPort = port;
   const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
 
   port.on('open', () => {
-    console.log(`[serial] listening on ${SERIAL_PATH}`);
+    console.log(`[serial] connected on ${SERIAL_PORT}`);
+    sendArduinoCommand('LIGHT_OFF');
   });
 
   port.on('error', (err) => {
@@ -203,13 +223,20 @@ function startSerialListener() {
 
   parser.on('data', async (line) => {
     const text = String(line).trim();
-    if (text === 'PUBLISH') {
-      console.log('[serial] PUBLISH received');
-      try {
-        await publishLatestDraft('arduino');
-      } catch (err) {
-        console.error('[serial] publish failed:', err.message);
+    console.log('[serial] data:', JSON.stringify(text));
+
+    if (text !== 'PUBLISH') {
+      return;
+    }
+
+    console.log('[serial] PUBLISH — calling publishLatestDraft()');
+    try {
+      const result = await publishLatestDraft('arduino');
+      if (result.ok) {
+        console.log('[serial] publish succeeded — /display updated');
       }
+    } catch (err) {
+      console.error('[serial] publish failed:', err.message);
     }
   });
 }
