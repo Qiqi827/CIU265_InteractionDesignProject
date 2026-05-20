@@ -25,6 +25,7 @@ const FIFO_SLOTS = 8;
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const snapBtn = document.getElementById('snap-btn');
+const cameraSelect = document.getElementById('camera-select');
 const toast = document.getElementById('toast');
 const shutter = document.getElementById('shutter-overlay');
 const photoWall = document.getElementById('photo-wall');
@@ -35,6 +36,8 @@ const cells = Array.from(photoWall.querySelectorAll('.photo-cell'));
 const photoLibrary = [];                  // [{id, dataUrl, votes, createdAt}]
 const voteCooldownUntil = new Map();      // photoId -> timestamp
 let toastTimerId = null;
+let activeStream = null;
+let cameraDeviceId = '';
 
 // ---------- Socket.IO ----------
 
@@ -86,15 +89,94 @@ socket.on('photo:voted', ({ id, votes }) => {
 
 async function setupCamera() {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false,
-        });
-        video.srcObject = stream;
+        await populateCameraList();
+        await startCamera(cameraDeviceId);
     } catch (err) {
         console.error('Failed to access camera', err);
         showToast('Camera unavailable', true);
     }
+}
+
+async function populateCameraList() {
+    if (!cameraSelect || !navigator.mediaDevices?.enumerateDevices) return;
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cameras = devices.filter((device) => device.kind === 'videoinput');
+    const needsLabelRefresh = cameras.some((device) => !device.label);
+
+    const previousValue = cameraSelect.value;
+    cameraSelect.innerHTML = '';
+
+    cameras.forEach((device, index) => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.textContent = device.label || `Camera ${index + 1}`;
+        cameraSelect.appendChild(option);
+    });
+
+    if (cameras.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No camera found';
+        cameraSelect.appendChild(option);
+        cameraSelect.disabled = true;
+        return;
+    }
+
+    cameraSelect.disabled = false;
+
+    if (needsLabelRefresh) {
+        // After the first permission grant, labels become available on most
+        // browsers. Re-enumerate once so the dropdown shows friendly names.
+        const refreshed = await navigator.mediaDevices.enumerateDevices();
+        const refreshedCameras = refreshed.filter((device) => device.kind === 'videoinput');
+        if (refreshedCameras.some((device) => device.label)) {
+            cameraSelect.innerHTML = '';
+            refreshedCameras.forEach((device, index) => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.textContent = device.label || `Camera ${index + 1}`;
+                cameraSelect.appendChild(option);
+            });
+        }
+    }
+
+    const selected = cameras.some((device) => device.deviceId === previousValue)
+        ? previousValue
+        : (cameraDeviceId && cameras.some((device) => device.deviceId === cameraDeviceId)
+            ? cameraDeviceId
+            : cameras[0].deviceId);
+
+    cameraSelect.value = selected;
+    cameraDeviceId = selected;
+}
+
+async function startCamera(deviceId = '') {
+    stopCamera();
+
+    const constraints = {
+        video: deviceId
+            ? { deviceId: { exact: deviceId } }
+            : { facingMode: 'user' },
+        audio: false,
+    };
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    activeStream = stream;
+    video.srcObject = stream;
+    cameraDeviceId = deviceId || getCurrentVideoTrackDeviceId(stream) || '';
+}
+
+function stopCamera() {
+    if (!activeStream) return;
+    activeStream.getTracks().forEach((track) => track.stop());
+    activeStream = null;
+}
+
+function getCurrentVideoTrackDeviceId(stream) {
+    const track = stream?.getVideoTracks?.()[0];
+    const settings = track?.getSettings?.();
+    return settings?.deviceId || '';
 }
 
 // ---------- UI helpers ----------
@@ -308,6 +390,18 @@ async function takePhoto() {
 }
 
 snapBtn.addEventListener('click', takePhoto);
+
+if (cameraSelect) {
+    cameraSelect.addEventListener('change', async () => {
+        const nextDeviceId = cameraSelect.value;
+        try {
+            await startCamera(nextDeviceId);
+        } catch (err) {
+            console.error('Failed to switch camera', err);
+            showToast('Camera switch failed', true);
+        }
+    });
+}
 
 // ---------- Init ----------
 

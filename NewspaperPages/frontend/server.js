@@ -33,6 +33,10 @@ app.get('/capture', (req, res) =>
     res.sendFile(path.join(__dirname, 'public/capture.html')));
 app.get('/display', (req, res) =>
     res.sendFile(path.join(__dirname, 'public/index.html')));
+// capture.html lives under public/, but the capture client script lives one
+// level up so we expose it explicitly here.
+app.get('/script.js', (req, res) =>
+    res.sendFile(path.join(__dirname, 'script.js')));
 
 // Read-only state endpoint (handy for debugging from a phone or curl)
 app.get('/api/state', (req, res) => {
