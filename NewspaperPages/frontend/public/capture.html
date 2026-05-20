@@ -12,12 +12,12 @@
                 <video id="video" autoplay playsinline></video>
                 <div class="shutter-overlay" id="shutter-overlay"></div>
             </div>
-            <div class="camera-controls">
-                <label for="camera-select">Camera</label>
-                <select id="camera-select">
-                    <option value="">Loading cameras...</option>
+            <label class="camera-picker-wrap" for="camera-picker">
+                <span class="camera-picker-label">Camera</span>
+                <select id="camera-picker" class="camera-picker">
+                    <option value="">Auto</option>
                 </select>
-            </div>
+            </label>
             <button id="snap-btn">CAPTURE</button>
         </section>
 

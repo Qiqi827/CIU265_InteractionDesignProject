@@ -1,140 +1,171 @@
-// Photo Wall server
-//
-// Express + Socket.IO. Serves the capture page (/capture) and the
-// newspaper display (/display, also /), and keeps the canonical photo
-// library + vote counts in memory. Capture clients emit `photo:add` and
-// `photo:vote`; the server broadcasts to all other connected clients so
-// the newspaper display stays in sync in real time.
-//
-// Modelled after the Typewriter subproject (CIU265_InteractionDesignProject
-// /Typewriter): same Express + Socket.IO architecture, run with `npm start`,
-// designed to be deployed on a single machine on the exhibition LAN.
-
 const express = require('express');
 const http = require('http');
 const path = require('path');
-const { Server } = require('socket.io');
 require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
 
 // ---------- Config ----------
 
 const PORT = Number(process.env.PORT) || 3100;
-const MAX_LIBRARY = 100;
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://uhcgprnorihyvhrkxmpm.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_9ht5mlr0XOi3UefgMdbU4Q_-d5xzRcZ';
+
+function createSupabaseAdmin() {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
+    return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
+    });
+}
 
 // ---------- Express ----------
 
 const app = express();
 const server = http.createServer(app);
 
+app.use(express.json({ limit: '6mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/script.js', (req, res) =>
+    res.sendFile(path.join(__dirname, 'script.js')));
 
 app.get('/', (req, res) => res.redirect('/display'));
 app.get('/capture', (req, res) =>
     res.sendFile(path.join(__dirname, 'public/capture.html')));
 app.get('/display', (req, res) =>
     res.sendFile(path.join(__dirname, 'public/index.html')));
-// capture.html lives under public/, but the capture client script lives one
-// level up so we expose it explicitly here.
-app.get('/script.js', (req, res) =>
-    res.sendFile(path.join(__dirname, 'script.js')));
 
-// Read-only state endpoint (handy for debugging from a phone or curl)
-app.get('/api/state', (req, res) => {
+app.get('/api/config', (req, res) => {
     res.json({
-        library: photoLibrary,
-        count: photoLibrary.length,
-        max: MAX_LIBRARY,
+        supabaseUrl: SUPABASE_URL,
+        supabaseAnonKey: SUPABASE_ANON_KEY,
+        photoTable: 'citizen_photos',
     });
 });
 
-// Admin reset (no UI button - call manually if needed):
-//   curl -X POST http://localhost:3100/api/reset
-app.post('/api/reset', (req, res) => {
-    photoLibrary.length = 0;
-    io.emit('photo:state', { library: photoLibrary });
-    console.log('[admin] library reset via POST /api/reset');
-    res.json({ ok: true });
+app.get('/api/state', async (req, res) => {
+    const supabase = createSupabaseAdmin();
+    if (!supabase) {
+        res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY is missing' });
+        return;
+    }
+
+    try {
+        const { data: photos, error: photosError } = await supabase
+            .from('citizen_photos')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (photosError) {
+            res.status(500).json({
+                error: 'Failed to load state',
+                details: {
+                    photos: photosError?.message || null,
+                },
+            });
+            return;
+        }
+
+        res.json({ photos: photos || [] });
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
 });
 
-// ---------- Socket.IO ----------
+app.post('/api/photos', async (req, res) => {
+    const supabase = createSupabaseAdmin();
+    if (!supabase) {
+        res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY is missing' });
+        return;
+    }
 
-const io = new Server(server, {
-    // Generous payload limit so we can carry the compressed JPEG data URLs
-    maxHttpBufferSize: 5 * 1024 * 1024, // 5 MB
+    try {
+        const {
+            id,
+            session_id = null,
+            image_data,
+            created_at = null,
+            source = 'local-capture',
+        } = req.body || {};
+
+        if (!id || !image_data) {
+            res.status(400).json({ error: 'id and image_data are required' });
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('citizen_photos')
+            .insert({
+                id,
+                session_id,
+                image_data,
+                votes: 0,
+                source,
+                created_at,
+            })
+            .select('*')
+            .single();
+
+        if (error) {
+            res.status(500).json({ error: error.message, details: error });
+            return;
+        }
+
+        res.status(201).json({ ok: true, photo: data });
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
 });
 
-const photoLibrary = []; // [{id, dataUrl, votes, createdAt}]
+app.post('/api/photos/:id/vote', async (req, res) => {
+    const supabase = createSupabaseAdmin();
+    if (!supabase) {
+        res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY is missing' });
+        return;
+    }
 
-io.on('connection', (socket) => {
-    console.log('[socket]', socket.id, 'connected from', socket.handshake.address);
+    try {
+        const { id } = req.params;
+        const { data: current, error: currentError } = await supabase
+            .from('citizen_photos')
+            .select('id, votes')
+            .eq('id', id)
+            .single();
 
-    // Catch the newcomer up with whatever we have now.
-    socket.emit('photo:state', { library: photoLibrary });
-
-    // Capture client uploads a new photo.
-    socket.on('photo:add', (photo, ack) => {
-        if (!photo || typeof photo !== 'object') {
-            if (typeof ack === 'function') ack({ ok: false, error: 'bad payload' });
-            return;
-        }
-        if (!photo.id || !photo.dataUrl) {
-            if (typeof ack === 'function') ack({ ok: false, error: 'missing fields' });
-            return;
-        }
-        if (photoLibrary.some((p) => p.id === photo.id)) {
-            if (typeof ack === 'function') ack({ ok: true, deduped: true });
+        if (currentError || !current) {
+            res.status(404).json({ error: 'unknown id', details: currentError });
             return;
         }
 
-        const stored = {
-            id: String(photo.id),
-            dataUrl: String(photo.dataUrl),
-            votes: 0,
-            createdAt: photo.createdAt || new Date().toISOString(),
-        };
-        photoLibrary.push(stored);
-        while (photoLibrary.length > MAX_LIBRARY) photoLibrary.shift();
+        const nextVotes = Number(current.votes || 0) + 1;
+        const { data, error } = await supabase
+            .from('citizen_photos')
+            .update({ votes: nextVotes })
+            .eq('id', id)
+            .select('*')
+            .single();
 
-        // Fan out to every OTHER connected client (the sender already has it).
-        socket.broadcast.emit('photo:added', stored);
-
-        console.log('[photo:add]', stored.id, '(library size:', photoLibrary.length + ')');
-        if (typeof ack === 'function') ack({ ok: true });
-    });
-
-    // Capture client votes for a photo.
-    socket.on('photo:vote', (photoId, ack) => {
-        const id = typeof photoId === 'string' ? photoId : photoId?.id;
-        if (!id) {
-            if (typeof ack === 'function') ack({ ok: false, error: 'missing id' });
+        if (error) {
+            res.status(500).json({ error: error.message, details: error });
             return;
         }
-        const photo = photoLibrary.find((p) => p.id === id);
-        if (!photo) {
-            if (typeof ack === 'function') ack({ ok: false, error: 'unknown id' });
-            return;
-        }
-        photo.votes += 1;
-        socket.broadcast.emit('photo:voted', { id: photo.id, votes: photo.votes });
-        console.log('[photo:vote]', id, '->', photo.votes);
-        if (typeof ack === 'function') ack({ ok: true, votes: photo.votes });
-    });
 
-    socket.on('disconnect', (reason) => {
-        console.log('[socket]', socket.id, 'disconnected:', reason);
-    });
+        res.json({ ok: true, photo: data });
+    } catch (error) {
+        res.status(500).json({ error: String(error) });
+    }
 });
 
 // ---------- Boot ----------
 
 server.listen(PORT, () => {
     console.log('');
-    console.log('🗞️  Photo Wall server running');
+    console.log('Photo Wall server running');
     console.log('');
     console.log(`   Capture:  http://localhost:${PORT}/capture`);
     console.log(`   Display:  http://localhost:${PORT}/display`);
     console.log('');
-    console.log('   On the exhibition LAN, replace "localhost" with this');
-    console.log('   machine\'s IP address on every other device.');
+    console.log(`   Supabase URL: ${SUPABASE_URL}`);
+    console.log(`   Service role key set: ${SUPABASE_SERVICE_ROLE_KEY ? 'yes' : 'no'}`);
     console.log('');
 });

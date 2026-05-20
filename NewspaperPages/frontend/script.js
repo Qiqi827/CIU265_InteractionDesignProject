@@ -1,185 +1,38 @@
-// Capture client: webcam → 9-slot voting wall, synced through Socket.IO.
-//
-// Slot 0 is BEST (fixed) - the photo with the most votes (>=1) takes it,
-// ties broken by most-recent createdAt. Slots 1-8 hold the most recent
-// non-BEST photos in FIFO order.
-//
-// The Node + Express + Socket.IO server (server.js at repo root) owns the
-// canonical photo library and vote counts; we mirror its state locally and
-// emit `photo:add` / `photo:vote` for changes. Reload-safe: on reconnect
-// the server sends `photo:state` with the current snapshot.
-
-import { io } from 'https://cdn.socket.io/4.7.5/socket.io.esm.min.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // ---------- Config ----------
 
 const BROADCAST_MAX_DIM = 600;
 const BROADCAST_QUALITY = 0.7;
-
 const VOTE_COOLDOWN_MS = 5000;
 const MAX_LIBRARY = 100;
 const FIFO_SLOTS = 8;
+
+const API_BASE = '';
+const PHOTO_TABLE = 'citizen_photos';
 
 // ---------- DOM ----------
 
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const snapBtn = document.getElementById('snap-btn');
-const cameraSelect = document.getElementById('camera-select');
 const toast = document.getElementById('toast');
 const shutter = document.getElementById('shutter-overlay');
+const cameraPicker = document.getElementById('camera-picker');
 const photoWall = document.getElementById('photo-wall');
 const cells = Array.from(photoWall.querySelectorAll('.photo-cell'));
 
 // ---------- State ----------
 
-const photoLibrary = [];                  // [{id, dataUrl, votes, createdAt}]
-const voteCooldownUntil = new Map();      // photoId -> timestamp
+const photoLibrary = [];
+const voteCooldownUntil = new Map();
 let toastTimerId = null;
 let activeStream = null;
-let cameraDeviceId = '';
+let supabase = null;
+let currentSessionId = null;
+let currentCameraDeviceId = '';
 
-// ---------- Socket.IO ----------
-
-// Connect to the same origin that served this page.
-const socket = io();
-
-socket.on('connect', () => {
-    console.log('[citizen-lens] socket connected:', socket.id);
-});
-
-socket.on('disconnect', (reason) => {
-    console.log('[citizen-lens] socket disconnected:', reason);
-});
-
-socket.on('connect_error', (err) => {
-    console.error('[citizen-lens] socket connect_error:', err.message);
-    showToast('Server unreachable', true);
-});
-
-// Server sends the full snapshot on connect (and on reset).
-socket.on('photo:state', ({ library }) => {
-    photoLibrary.length = 0;
-    if (Array.isArray(library)) library.forEach((p) => photoLibrary.push(p));
-    // Clear any cooldowns whose photos no longer exist.
-    for (const id of [...voteCooldownUntil.keys()]) {
-        if (!photoLibrary.some((p) => p.id === id)) voteCooldownUntil.delete(id);
-    }
-    renderWall();
-});
-
-// Another client added a photo.
-socket.on('photo:added', (photo) => {
-    if (!photo || !photo.id) return;
-    if (photoLibrary.some((p) => p.id === photo.id)) return;
-    photoLibrary.push(photo);
-    while (photoLibrary.length > MAX_LIBRARY) photoLibrary.shift();
-    renderWall();
-});
-
-// Another client voted.
-socket.on('photo:voted', ({ id, votes }) => {
-    const photo = photoLibrary.find((p) => p.id === id);
-    if (!photo) return;
-    photo.votes = votes; // trust the server's count
-    renderWall();
-});
-
-// ---------- Camera ----------
-
-async function setupCamera() {
-    try {
-        await populateCameraList();
-        await startCamera(cameraDeviceId);
-    } catch (err) {
-        console.error('Failed to access camera', err);
-        showToast('Camera unavailable', true);
-    }
-}
-
-async function populateCameraList() {
-    if (!cameraSelect || !navigator.mediaDevices?.enumerateDevices) return;
-
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const cameras = devices.filter((device) => device.kind === 'videoinput');
-    const needsLabelRefresh = cameras.some((device) => !device.label);
-
-    const previousValue = cameraSelect.value;
-    cameraSelect.innerHTML = '';
-
-    cameras.forEach((device, index) => {
-        const option = document.createElement('option');
-        option.value = device.deviceId;
-        option.textContent = device.label || `Camera ${index + 1}`;
-        cameraSelect.appendChild(option);
-    });
-
-    if (cameras.length === 0) {
-        const option = document.createElement('option');
-        option.value = '';
-        option.textContent = 'No camera found';
-        cameraSelect.appendChild(option);
-        cameraSelect.disabled = true;
-        return;
-    }
-
-    cameraSelect.disabled = false;
-
-    if (needsLabelRefresh) {
-        // After the first permission grant, labels become available on most
-        // browsers. Re-enumerate once so the dropdown shows friendly names.
-        const refreshed = await navigator.mediaDevices.enumerateDevices();
-        const refreshedCameras = refreshed.filter((device) => device.kind === 'videoinput');
-        if (refreshedCameras.some((device) => device.label)) {
-            cameraSelect.innerHTML = '';
-            refreshedCameras.forEach((device, index) => {
-                const option = document.createElement('option');
-                option.value = device.deviceId;
-                option.textContent = device.label || `Camera ${index + 1}`;
-                cameraSelect.appendChild(option);
-            });
-        }
-    }
-
-    const selected = cameras.some((device) => device.deviceId === previousValue)
-        ? previousValue
-        : (cameraDeviceId && cameras.some((device) => device.deviceId === cameraDeviceId)
-            ? cameraDeviceId
-            : cameras[0].deviceId);
-
-    cameraSelect.value = selected;
-    cameraDeviceId = selected;
-}
-
-async function startCamera(deviceId = '') {
-    stopCamera();
-
-    const constraints = {
-        video: deviceId
-            ? { deviceId: { exact: deviceId } }
-            : { facingMode: 'user' },
-        audio: false,
-    };
-
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    activeStream = stream;
-    video.srcObject = stream;
-    cameraDeviceId = deviceId || getCurrentVideoTrackDeviceId(stream) || '';
-}
-
-function stopCamera() {
-    if (!activeStream) return;
-    activeStream.getTracks().forEach((track) => track.stop());
-    activeStream = null;
-}
-
-function getCurrentVideoTrackDeviceId(stream) {
-    const track = stream?.getVideoTracks?.()[0];
-    const settings = track?.getSettings?.();
-    return settings?.deviceId || '';
-}
-
-// ---------- UI helpers ----------
+// ---------- Helpers ----------
 
 function showToast(message, isError = false) {
     if (!toast) return;
@@ -202,43 +55,36 @@ function makeId() {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// ---------- Image processing ----------
-
-function captureFrameDataUrl(quality) {
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
-    if (!vw || !vh) return null;
-    canvas.width = vw;
-    canvas.height = vh;
-    canvas.getContext('2d').drawImage(video, 0, 0, vw, vh);
-    return canvas.toDataURL('image/jpeg', quality);
+function isConfigured() {
+    return !!supabase;
 }
 
-function downscaleDataUrl(srcDataUrl, maxDim, quality) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-            let w = img.naturalWidth || img.width;
-            let h = img.naturalHeight || img.height;
-            if (w > h && w > maxDim) {
-                h = Math.round(h * maxDim / w);
-                w = maxDim;
-            } else if (h >= w && h > maxDim) {
-                w = Math.round(w * maxDim / h);
-                h = maxDim;
-            }
-            const c = document.createElement('canvas');
-            c.width = w;
-            c.height = h;
-            c.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(c.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = reject;
-        img.src = srcDataUrl;
-    });
+function normalizePhoto(row) {
+    if (!row || !row.id) return null;
+    return {
+        id: row.id,
+        dataUrl: row.image_data || row.data_url || row.dataUrl || '',
+        votes: typeof row.votes === 'number' ? row.votes : Number(row.votes || 0),
+        createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+    };
 }
 
-// ---------- Library logic ----------
+function upsertPhoto(row) {
+    const photo = normalizePhoto(row);
+    if (!photo) return;
+    const index = photoLibrary.findIndex((p) => p.id === photo.id);
+    if (index >= 0) {
+        photoLibrary[index] = photo;
+    } else {
+        photoLibrary.push(photo);
+        while (photoLibrary.length > MAX_LIBRARY) photoLibrary.shift();
+    }
+}
+
+function removePhoto(id) {
+    const index = photoLibrary.findIndex((p) => p.id === id);
+    if (index >= 0) photoLibrary.splice(index, 1);
+}
 
 function getBestPhoto() {
     if (photoLibrary.length === 0) return null;
@@ -258,8 +104,6 @@ function getFifoPhotos() {
         .slice(0, FIFO_SLOTS);
 }
 
-// ---------- Rendering ----------
-
 function renderCell(cell, photo) {
     const slot = cell.querySelector('.photo-slot');
     const btn = cell.querySelector('.vote-btn');
@@ -272,13 +116,10 @@ function renderCell(cell, photo) {
             slot.innerHTML = `<img src="${photo.dataUrl}" data-photo-id="${photo.id}">`;
         }
         countEl.textContent = String(photo.votes);
-
         const cooldownEnd = voteCooldownUntil.get(photo.id);
         const onCooldown = cooldownEnd && cooldownEnd > Date.now();
         btn.disabled = !!onCooldown;
-        btn.textContent = onCooldown
-            ? `${Math.ceil((cooldownEnd - Date.now()) / 1000)}s`
-            : 'VOTE';
+        btn.textContent = onCooldown ? `${Math.ceil((cooldownEnd - Date.now()) / 1000)}s` : 'VOTE';
     } else {
         delete cell.dataset.photoId;
         slot.innerHTML = '';
@@ -292,33 +133,184 @@ function renderWall() {
     const best = getBestPhoto();
     const fifo = getFifoPhotos();
     renderCell(cells[0], best);
-    for (let i = 0; i < FIFO_SLOTS; i++) {
-        renderCell(cells[i + 1], fifo[i]);
-    }
+    for (let i = 0; i < FIFO_SLOTS; i += 1) renderCell(cells[i + 1], fifo[i]);
 }
 
-let cooldownTickTimerId = null;
 function ensureCooldownTicker() {
-    if (cooldownTickTimerId) return;
-    cooldownTickTimerId = setInterval(() => {
+    if (window.__photoCooldownTicker) return;
+    window.__photoCooldownTicker = setInterval(() => {
         const now = Date.now();
         let stillActive = false;
         for (const [id, end] of voteCooldownUntil) {
-            if (end > now) {
-                stillActive = true;
-            } else {
-                voteCooldownUntil.delete(id);
-            }
+            if (end > now) stillActive = true;
+            else voteCooldownUntil.delete(id);
         }
         renderWall();
         if (!stillActive) {
-            clearInterval(cooldownTickTimerId);
-            cooldownTickTimerId = null;
+            clearInterval(window.__photoCooldownTicker);
+            window.__photoCooldownTicker = null;
         }
     }, 250);
 }
 
-// ---------- Vote handling ----------
+function captureFrameDataUrl(quality) {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return null;
+    canvas.width = vw;
+    canvas.height = vh;
+    canvas.getContext('2d').drawImage(video, 0, 0, vw, vh);
+    return canvas.toDataURL('image/jpeg', quality);
+}
+
+function downscaleDataUrl(srcDataUrl, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            let w = img.naturalWidth || img.width;
+            let h = img.naturalHeight || img.height;
+            if (w > h && w > maxDim) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+            } else if (h >= w && h > maxDim) {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+            }
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            c.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(c.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = srcDataUrl;
+    });
+}
+
+async function loadSupabaseConfig() {
+    try {
+        const response = await fetch(`${API_BASE}/api/config`);
+        if (!response.ok) throw new Error(`config ${response.status}`);
+        const config = await response.json();
+        supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+    } catch (error) {
+        console.error('[capture] config load failed:', error);
+        showToast('Supabase config unavailable', true);
+    }
+}
+
+async function loadCurrentSession() {
+    if (!isConfigured()) return;
+    const { data, error } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('status', 'active')
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        console.warn('[capture] could not load active session:', error.message);
+        return;
+    }
+
+    currentSessionId = data?.id || null;
+}
+
+async function loadExistingPhotos() {
+    if (!isConfigured()) return;
+    let query = supabase
+        .from(PHOTO_TABLE)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(MAX_LIBRARY);
+
+    if (currentSessionId) {
+        query = query.eq('session_id', currentSessionId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.warn('[capture] could not load existing photos:', error.message);
+        return;
+    }
+
+    photoLibrary.length = 0;
+    (data || []).forEach(upsertPhoto);
+    renderWall();
+}
+
+function subscribeToPhotos() {
+    if (!isConfigured()) return;
+    const changes = { event: '*', schema: 'public', table: PHOTO_TABLE };
+    if (currentSessionId) {
+        changes.filter = `session_id=eq.${currentSessionId}`;
+    }
+
+    supabase
+        .channel(currentSessionId ? `citizen-photos:${currentSessionId}` : 'citizen-photos')
+        .on('postgres_changes', changes, (payload) => {
+            const row = payload.new || payload.old;
+            if (!row) return;
+            if (payload.eventType === 'DELETE') removePhoto(row.id);
+            else upsertPhoto(row);
+            renderWall();
+        })
+        .subscribe();
+}
+
+async function setupCamera() {
+    const constraints = {
+        video: currentCameraDeviceId
+            ? { deviceId: { exact: currentCameraDeviceId } }
+            : true,
+        audio: false,
+    };
+    try {
+        if (activeStream) {
+            activeStream.getTracks().forEach((track) => track.stop());
+            activeStream = null;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        activeStream = stream;
+        video.srcObject = stream;
+        await populateCameraPicker();
+    } catch (err) {
+        console.error('Failed to access camera', err);
+        showToast('Camera unavailable', true);
+    }
+}
+
+async function populateCameraPicker() {
+    if (!cameraPicker || !navigator.mediaDevices?.enumerateDevices) return;
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cameras = devices.filter((device) => device.kind === 'videoinput');
+    const previous = cameraPicker.value;
+
+    cameraPicker.innerHTML = '<option value="">Auto</option>';
+    cameras.forEach((device, index) => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.textContent = device.label || `Camera ${index + 1}`;
+        cameraPicker.appendChild(option);
+    });
+
+    if (currentCameraDeviceId && cameras.some((device) => device.deviceId === currentCameraDeviceId)) {
+        cameraPicker.value = currentCameraDeviceId;
+    } else if (previous && cameras.some((device) => device.deviceId === previous)) {
+        cameraPicker.value = previous;
+        currentCameraDeviceId = previous;
+    }
+}
+
+async function handleCameraChange() {
+    if (!cameraPicker) return;
+    currentCameraDeviceId = cameraPicker.value || '';
+    await setupCamera();
+}
 
 function handleWallClick(event) {
     const btn = event.target.closest('.vote-btn');
@@ -330,29 +322,26 @@ function handleWallClick(event) {
     const end = voteCooldownUntil.get(photoId);
     if (end && end > Date.now()) return;
 
-    // Optimistic local update so the UI feels instant.
     const photo = photoLibrary.find((p) => p.id === photoId);
     if (photo) photo.votes += 1;
     voteCooldownUntil.set(photoId, Date.now() + VOTE_COOLDOWN_MS);
     renderWall();
     ensureCooldownTicker();
 
-    // Tell the server. Server will fan out `photo:voted` to other clients.
-    socket.emit('photo:vote', photoId, (response) => {
-        if (response && response.ok === false) {
-            console.warn('[citizen-lens] vote rejected:', response.error);
-        } else if (response && typeof response.votes === 'number') {
-            // Reconcile with the server's authoritative count.
-            const p = photoLibrary.find((x) => x.id === photoId);
-            if (p) p.votes = response.votes;
+    fetch(`${API_BASE}/api/photos/${encodeURIComponent(photoId)}/vote`, { method: 'POST' })
+        .then(async (response) => {
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(result.error || `vote ${response.status}`);
+            }
+            if (result.photo) upsertPhoto(result.photo);
             renderWall();
-        }
-    });
+        })
+        .catch((error) => {
+            console.warn('[capture] vote failed:', error);
+            showToast('Vote sync failed', true);
+        });
 }
-
-photoWall.addEventListener('click', handleWallClick);
-
-// ---------- Capture handler ----------
 
 async function takePhoto() {
     flashShutter();
@@ -370,40 +359,46 @@ async function takePhoto() {
         createdAt: new Date().toISOString(),
     };
 
-    // Optimistic local add.
-    photoLibrary.push(photo);
-    while (photoLibrary.length > MAX_LIBRARY) photoLibrary.shift();
+    upsertPhoto({
+        id: photo.id,
+        image_data: photo.dataUrl,
+        votes: 0,
+        created_at: photo.createdAt,
+    });
     renderWall();
 
-    if (socket.connected) {
-        socket.emit('photo:add', photo, (response) => {
-            if (response && response.ok === false) {
-                console.warn('[citizen-lens] photo rejected:', response.error);
-                showToast('Sync failed', true);
-            } else {
-                showToast('Sent to newspaper');
-            }
+    try {
+        const response = await fetch(`${API_BASE}/api/photos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: photo.id,
+                session_id: currentSessionId,
+                image_data: photo.dataUrl,
+                created_at: photo.createdAt,
+                source: 'local-capture',
+            }),
         });
-    } else {
-        showToast('Saved locally (server offline)', true);
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || `upload ${response.status}`);
+        if (result.photo) upsertPhoto(result.photo);
+        renderWall();
+        showToast('Sent to newspaper');
+    } catch (error) {
+        console.error('[capture] upload failed:', error);
+        showToast('Sync failed', true);
     }
-}
-
-snapBtn.addEventListener('click', takePhoto);
-
-if (cameraSelect) {
-    cameraSelect.addEventListener('change', async () => {
-        const nextDeviceId = cameraSelect.value;
-        try {
-            await startCamera(nextDeviceId);
-        } catch (err) {
-            console.error('Failed to switch camera', err);
-            showToast('Camera switch failed', true);
-        }
-    });
 }
 
 // ---------- Init ----------
 
-setupCamera();
+photoWall.addEventListener('click', handleWallClick);
+snapBtn.addEventListener('click', takePhoto);
+cameraPicker?.addEventListener('change', handleCameraChange);
+
+await loadSupabaseConfig();
+await loadCurrentSession();
+await loadExistingPhotos();
+subscribeToPhotos();
+await setupCamera();
 renderWall();

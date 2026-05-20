@@ -2,7 +2,7 @@
     "name": "ciu265-photo-wall",
     "version": "1.0.0",
     "private": true,
-    "description": "Capture page + newspaper display synced through Socket.IO. Companion to the Typewriter subproject of CIU265 Interaction Design.",
+    "description": "Local capture page for the Citizen Lens flow, with Supabase-backed persistence and a newspaper display companion.",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
@@ -12,8 +12,8 @@
         "node": ">=18"
     },
     "dependencies": {
+        "@supabase/supabase-js": "^2.56.0",
         "dotenv": "^16.4.5",
-        "express": "^4.21.0",
-        "socket.io": "^4.8.0"
+        "express": "^4.21.0"
     }
 }
